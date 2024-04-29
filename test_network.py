@@ -18,7 +18,7 @@ n.add("Generator", "Solar", bus="DCBus", p_nom=50, p_max_pu=[0, 2], p_min_pu=[0,
 n.add("Generator", "GlobalNetwork", bus="ACBus", control="Slack", marginal_cost=1, p_nom_extendable=True)
 
 
-n.add("Load", "H2gen", bus="H2Bus", p_set=[300, 50])
+n.add("Load", "H2gen", bus="H2Bus", p_set=[300, 100])
 
 
 n.add("Store", "Battery", bus="BatteryBus", e_nom_extendable=True, e_nom_max=100)
