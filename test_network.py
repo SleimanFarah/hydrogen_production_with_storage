@@ -13,15 +13,15 @@ n.add("Bus", "H2Bus", v_nom=vbus)
 n.add("Bus", "BatteryBus", v_nom=vbus)
 
 
-n.add("Generator", "Wind", bus="ACBus", p_nom=100, p_max_pu=[0.5, 2], p_min_pu=[0.5, 2], control="PV", marginal_cost=0)
-n.add("Generator", "Solar", bus="DCBus", p_nom=50, p_max_pu=[0, 2], p_min_pu=[0, 2], control="PV", marginal_cost=0)
-n.add("Generator", "GlobalNetwork", bus="ACBus", control="Slack", marginal_cost=1, p_nom_extendable=True)
+n.add("Generator", "Wind", bus="ACBus", p_nom=100, p_max_pu=[0, 2], p_min_pu=[0, 2], marginal_cost=0)
+n.add("Generator", "Solar", bus="DCBus", p_nom=50, p_max_pu=[0, 2], p_min_pu=[0, 2], marginal_cost=0)
+n.add("Generator", "GlobalNetwork", bus="ACBus", control="Slack", marginal_cost=1, p_nom_extendable=True, p_nom_min=-1000)
 
 
 n.add("Load", "H2gen", bus="H2Bus", p_set=[300, 100])
 
 
-n.add("Store", "Battery", bus="BatteryBus", e_nom_extendable=True, e_nom_max=100)
+n.add("Store", "Battery", bus="BatteryBus", e_nom_extendable=True, e_initial=0, marginal_cost=0.1)
 
 
 eff_charge = 0.9
