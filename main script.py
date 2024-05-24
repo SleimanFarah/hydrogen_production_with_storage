@@ -2,6 +2,7 @@ from class_network import *
 from convert_functions import *
 import random
 from csv_file_function import *
+from function_AC import *
 
 with open('solar_capacity_factor.csv', 'r') as PF_solar_data:
     PF_solar = csv_reader_function(PF_solar_data)
@@ -14,22 +15,20 @@ with open('electricity_price.csv', 'r') as price_data:
 
 with open('co2_intensity.csv', 'r') as CO2int_data:
     CO2int = np.multiply(csv_reader_function(CO2int_data), 0.001)
+
 # Initialization of variables
 
-
-
-
-# number_of_days = int((len(PF_solar)/24)-2)
 number_of_days = 7
 delivery_period = 24*number_of_days
 # delivery_mass = number_of_days*0.7*24*P_to_H2(1000, 33.3)
 delivery_mass = 2071
 initial_battery = 0
+initial_hour = 4000
 
-PF_wind = PF_wind[0:delivery_period*2+48]
-PF_solar = PF_solar[0:delivery_period*2+48]
-price = price[0:delivery_period*2+48]
-CO2int = CO2int[0:delivery_period*2+48]
+PF_wind = PF_wind[initial_hour+0:initial_hour+delivery_period*2+48]
+PF_solar = PF_solar[initial_hour+0:initial_hour+delivery_period*2+48]
+price = price[initial_hour+0:initial_hour+delivery_period*2+48]
+CO2int = CO2int[initial_hour+0:initial_hour+delivery_period*2+48]
 
 # PF_wind = [random.uniform(0.4, 1) for _ in range(delivery_period+48)]
 # PF_solar = [random.uniform(0.4, 1) for _ in range(delivery_period+48)]
@@ -51,7 +50,7 @@ H2_mass_remaining = delivery_mass
 total_production = 0
 total_emissions = 0
 total_electricity_cost = 0
-total_electricity_balance = 0
+total_electricity_balance = (Annualized_cost(0, 50, 1000000, 10000)/8760)*delivery_period
 # Loop for the whole delivery period
 
 while i < number_of_days:
@@ -79,6 +78,7 @@ while i < number_of_days:
     total_electricity_cost = total_electricity_cost + hydrogen_plant.electricity_cost
     total_electricity_balance = total_electricity_balance + hydrogen_plant.electricity_balance
 
+
     i = i + 1
     time_left = delivery_period - i*24
     total_production = total_production + hydrogen_plant.total_production
@@ -95,5 +95,5 @@ print(dr_pf_series)
 print(total_production)
 print(delivery_mass)
 # print(dr_pf_series[0][1].sum())
-print(total_electricity_cost/total_production)
+print(total_electricity_balance/total_production)
 print(total_emissions/total_production)

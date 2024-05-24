@@ -34,8 +34,9 @@ class HydrogenProductionSystem:
         n.add("Bus", "NetworkBus")
 
         # Generators creation
-        n.add("Generator", "Wind", bus="ACBus", p_nom=1000)
-        n.add("Generator", "Solar", bus="DCBus", p_nom=1000)
+        self.installed_power = 1000
+        n.add("Generator", "Wind", bus="ACBus", p_nom=self.installed_power)
+        n.add("Generator", "Solar", bus="DCBus", p_nom=self.installed_power)
         n.add("Generator", "GlobalNetwork", bus="NetworkBus", p_nom_extendable=True, p_max_pu=1000, p_min_pu=-1000)
 
         # Hydrolyzer creation
@@ -49,10 +50,10 @@ class HydrogenProductionSystem:
         n.add("Store", "Battery", bus="BatteryBus", e_nom_extendable=True, e_nom_max=battery_capacity)
 
         # Link values initialization
-        self.eff_charge = 1
-        self.eff_discharge = 1
-        self.eff_electrolysis = 1
-        self.eff_converter = 1
+        self.eff_charge = 0.9
+        self.eff_discharge = 0.9
+        self.eff_electrolysis = 0.6
+        self.eff_converter = 0.95
 
         # Links creation
         n.add("Link", "H2Link", bus0="ACBus", bus1="H2Bus", efficiency=self.eff_electrolysis, p_nom_extendable=True)
@@ -88,6 +89,7 @@ class HydrogenProductionSystem:
         self.electricity_cost = 0
         self.electricity_revenue = 0
         self.electricity_balance = 0
+        self.opportunity_cost = 0
 
 
 
@@ -280,8 +282,8 @@ class HydrogenProductionSystem:
         self.CO2_emissions = np.multiply(n.links_t.p0["BuyLink"], dr_CO2Intensity).sum()
         self.electricity_cost = np.multiply(n.links_t.p0["BuyLink"], dr_price).sum()
         self.electricity_revenue = np.multiply(n.links_t.p0["SellLink"], dr_price).sum()
-        self.electricity_balance = self.electricity_cost - self.electricity_revenue
-
+        self.opportunity_cost = self.opportunity_cost + np.multiply(dr_PF_wind, dr_price).sum()*self.installed_power+np.multiply(dr_PF_solar, dr_price).sum()*self.installed_power
+        self.electricity_balance = self.electricity_cost - self.electricity_revenue + self.opportunity_cost
 
 
 if __name__ == '__main__':
