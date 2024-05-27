@@ -41,6 +41,7 @@ class HydrogenProductionSystem:
 
         # Hydrolyzer creation
         self.hydrolyzer_capacity = 1000
+        self.hydrolyzer_ramp_limit = 0.5
         n.add("Store", "H2gen", bus="H2Bus")
         n.add("Load", "H2gen", bus="H2Bus")
 
@@ -56,13 +57,13 @@ class HydrogenProductionSystem:
         self.eff_converter = 0.95
 
         # Links creation
-        n.add("Link", "H2Link", bus0="ACBus", bus1="H2Bus", efficiency=self.eff_electrolysis, p_nom_extendable=True)
-        n.add("Link", "ChargeLink", bus0="DCBus", bus1="BatteryBus", efficiency=self.eff_charge, p_nom_extendable=True)
-        n.add("Link", "DischargeLink", bus0="BatteryBus", bus1="DCBus", efficiency=self.eff_discharge, p_nom_extendable=True)
+        n.add("Link", "H2Link", bus0="ACBus", bus1="H2Bus", efficiency=self.eff_electrolysis, p_nom_extendable=True, p_nom_max=self.hydrolyzer_capacity)
+        n.add("Link", "ChargeLink", bus0="DCBus", bus1="BatteryBus", efficiency=self.eff_charge, p_nom_extendable=True, p_nom_max=1000)
+        n.add("Link", "DischargeLink", bus0="BatteryBus", bus1="DCBus", efficiency=self.eff_discharge, p_nom_extendable=True, p_nom_max=1000)
         n.add("Link", "ACtoDCLink", bus0="ACBus", bus1="DCBus", efficiency=self.eff_converter, p_nom_extendable=True)
         n.add("Link", "DCtoACLink", bus0="DCBus", bus1="ACBus", efficiency=self.eff_converter, p_nom_extendable=True)
-        n.add("Link", "BuyLink", bus0="NetworkBus", bus1="ACBus", p_nom_extendable=True)
-        n.add("Link", "SellLink", bus0="ACBus", bus1="NetworkBus", p_nom_extendable=True)
+        n.add("Link", "BuyLink", bus0="NetworkBus", bus1="ACBus", p_nom_extendable=True, p_nom_max=1000)
+        n.add("Link", "SellLink", bus0="ACBus", bus1="NetworkBus", p_nom_extendable=True, p_nom_max=1000)
 
         # Optimization parameters initialization
 
@@ -129,9 +130,9 @@ class HydrogenProductionSystem:
         # cstr = total_hydrolyzer_energy == total_H2_required_energy
         # m.add_constraints(cstr, name="target match")
 
-        for i in range(delivery_period+24):
-            cstr = m.variables["Link-p"].loc[i, "H2Link"] <= self.hydrolyzer_capacity
-            m.add_constraints(cstr, name="limited capacity at time {}".format(i))
+        for i in range(delivery_period+23):
+            cstr = -self.hydrolyzer_capacity*self.hydrolyzer_ramp_limit <= m.variables["Store-p"].loc[i, "H2gen"] - m.variables["Store-p"].loc[i, "H2gen"] <= self.hydrolyzer_capacity*self.hydrolyzer_ramp_limit
+            m.add_constraints(cstr, name="ramp limit at time {}".format(i))
 
         initial_energy = m.variables["Store-e"].loc[0, "Battery"]
         final_energy = m.variables["Store-e"].loc[delivery_period+23, "Battery"]
@@ -198,9 +199,9 @@ class HydrogenProductionSystem:
         # cstr = total_hydrolyzer_energy == total_H2_required_energy
         # m.add_constraints(cstr, name="target match")
 
-        for i in range(34):
-            cstr = m.variables["Link-p"].loc[i, "H2Link"] <= self.hydrolyzer_capacity
-            m.add_constraints(cstr, name="limited capacity at time {}".format(i))
+        # for i in range(34):
+        #     cstr = m.variables["Link-p"].loc[i, "H2Link"] <= self.hydrolyzer_capacity
+        #     m.add_constraints(cstr, name="limited capacity at time {}".format(i))
 
         expr = m.variables["Link-p"].loc[0, "BuyLink"] * (self.alpha * dp_CO2Intensity[0] + (1 - self.alpha) * dp_price[0])
         for i in range(1, 34):
@@ -254,9 +255,9 @@ class HydrogenProductionSystem:
         cstr = initial_energy == final_energy
         m.add_constraints(cstr, name="battery sustainability")
 
-        for i in range(0, 24):
-            cstr = m.variables["Link-p"].loc[i, "H2Link"] <= self.hydrolyzer_capacity
-            m.add_constraints(cstr, name="limited capacity at time {}".format(i))
+        # for i in range(0, 24):
+        #     cstr = m.variables["Link-p"].loc[i, "H2Link"] <= self.hydrolyzer_capacity
+        #     m.add_constraints(cstr, name="limited capacity at time {}".format(i))
 
         expr = m.variables["Link-p"].loc[0, "BuyLink"] * (self.alpha * dr_CO2Intensity[0] + (1 - self.alpha) * dr_price[0])
         for i in range(1, 24):
@@ -286,11 +287,11 @@ class HydrogenProductionSystem:
         self.electricity_balance = self.electricity_cost - self.electricity_revenue + self.opportunity_cost
 
 
-if __name__ == '__main__':
-    hydrogen_plant = HydrogenProductionSystem(40, 1000, 1, 1, 1, 1)
-    hydrogen_plant.lt_planner()
-    hydrogen_plant.daily_planner()
-    hydrogen_plant.realisation()
-    print(hydrogen_plant.ltp_pf_series)
-    print(hydrogen_plant.dp_pf_series)
-    print(hydrogen_plant.dr_pf_series)
+# if __name__ == '__main__':
+#     hydrogen_plant = HydrogenProductionSystem(1, 1, 10, 0, 1, 1, [1], [1])
+#     hydrogen_plant.lt_planner()
+#     hydrogen_plant.daily_planner()
+#     hydrogen_plant.realisation()
+#     print(hydrogen_plant.ltp_pf_series)
+#     print(hydrogen_plant.dp_pf_series)
+#     print(hydrogen_plant.dr_pf_series)
