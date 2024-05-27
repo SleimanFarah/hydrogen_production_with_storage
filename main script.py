@@ -18,13 +18,14 @@ with open('co2_intensity.csv', 'r') as CO2int_data:
 
 # Initialization of variables
 
-number_of_days = 1
+number_of_days = 1  # number of days in a delivery period
 simulation_period = 1  # number of delivery periods in the simulation
 delivery_period = 24*number_of_days
 # delivery_mass = number_of_days*0.7*24*P_to_H2(1000, 33.3)
-delivery_mass = 150
+total_mass = 296
+delivery_mass = total_mass/simulation_period
 initial_battery = 0
-initial_hour = 4000
+initial_hour = 0
 
 
 PF_wind = PF_wind[initial_hour:]
@@ -53,12 +54,12 @@ H2_mass_remaining = delivery_mass
 total_production = 0
 total_emissions = 0
 total_electricity_cost = 0
-total_electricity_balance = (Annualized_cost(0, 50, 1000000, 10000)/8760)*delivery_period
+total_electricity_balance = (Annualized_cost(0, 50, 1000000, 10000)/8760)*delivery_period*simulation_period
 # Loop for the whole delivery period
 
 while j < simulation_period:
     while i < number_of_days:
-        print(j, i)
+        print(j+1, i+1)
         ltp_PF_wind = PF_wind[10+i*24+j*delivery_period:delivery_period+34+i*24+j*delivery_period]
         ltp_PF_solar = PF_solar[10+i*24+j*delivery_period:delivery_period+34+i*24+j*delivery_period]
         ltp_price = price[10+i*24+j*delivery_period:delivery_period+34+i*24+j*delivery_period]
