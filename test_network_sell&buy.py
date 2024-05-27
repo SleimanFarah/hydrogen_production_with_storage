@@ -6,20 +6,22 @@ import pypsatopo
 
 n = Network()
 n.set_snapshots(range(2))
-vbus = 230
-n.add("Bus", "ACBus", v_nom=vbus)
-n.add("Bus", "DCBus", v_nom=vbus)
-n.add("Bus", "H2Bus", v_nom=vbus)
-n.add("Bus", "BatteryBus", v_nom=vbus)
-n.add("Bus", "NetworkBus", v_nom=vbus)
+n.add("Bus", "ACBus")
+n.add("Bus", "DCBus")
+n.add("Bus", "H2Bus")
+n.add("Bus", "BatteryBus")
+n.add("Bus", "NetworkBus")
+
+p_nom_wind = 100
+p_nom_solar = 50
 
 
-n.add("Generator", "Wind", bus="ACBus", p_nom=100, p_max_pu=[2, 0.5], p_min_pu=[2, 0.5], marginal_cost=0)
-n.add("Generator", "Solar", bus="DCBus", p_nom=50, p_max_pu=[1, 0], p_min_pu=[1, 0], marginal_cost=0)
+n.add("Generator", "Wind", bus="ACBus", p_nom=p_nom_wind, p_max_pu=[2, 0.5], p_min_pu=[2, 0.5], marginal_cost=0)
+n.add("Generator", "Solar", bus="DCBus", p_nom=p_nom_solar, p_max_pu=[1, 0], p_min_pu=[1, 0], marginal_cost=0)
 n.add("Generator", "GlobalNetwork", bus="NetworkBus", p_nom_extendable=True, p_max_pu=1, p_min_pu=-1)
 
 
-n.add("Load", "H2gen", bus="H2Bus", p_set=100)
+n.add("Load", "H2gen", bus="H2Bus", p_set=200)
 
 
 n.add("Store", "Battery", bus="BatteryBus", e_nom_extendable=True, e_initial=0, e_nom_max=1000)

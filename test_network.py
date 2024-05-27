@@ -5,7 +5,7 @@ import pypsatopo
 
 
 n = Network()
-n.set_snapshots(range(2))
+# n.set_snapshots(range(2))
 vbus = 230
 n.add("Bus", "ACBus", v_nom=vbus)
 n.add("Bus", "DCBus", v_nom=vbus)
@@ -13,15 +13,15 @@ n.add("Bus", "H2Bus", v_nom=vbus)
 n.add("Bus", "BatteryBus", v_nom=vbus)
 
 
-n.add("Generator", "Wind", bus="ACBus", p_nom=100, p_max_pu=[0, 2], p_min_pu=[0, 2], marginal_cost=0)
-n.add("Generator", "Solar", bus="DCBus", p_nom=50, p_max_pu=[0, 2], p_min_pu=[0, 2], marginal_cost=0)
+n.add("Generator", "Wind", bus="ACBus", p_nom=100, p_max_pu=2, p_min_pu=2, marginal_cost=0)
+n.add("Generator", "Solar", bus="DCBus", p_nom=50, p_max_pu=2, p_min_pu=2, marginal_cost=0)
 n.add("Generator", "GlobalNetwork", bus="ACBus", control="Slack", marginal_cost=1, p_nom_extendable=True, p_nom_min=-1000)
 
 
-n.add("Load", "H2gen", bus="H2Bus", p_set=[300, 100])
+n.add("Load", "H2gen", bus="H2Bus", p_set=100)
 
 
-n.add("Store", "Battery", bus="BatteryBus", e_nom_extendable=True, e_initial=0, marginal_cost=0.1)
+n.add("Store", "Battery", bus="BatteryBus", e_nom_extendable=True, e_initial=0)
 
 
 eff_charge = 0.9
@@ -35,7 +35,14 @@ n.add("Link", "DischargeLink", bus0="BatteryBus", bus1="DCBus", efficiency=eff_d
 n.add("Link", "ACtoDCLink", bus0="ACBus", bus1="DCBus", efficiency=eff_converter, p_nom_extendable=True)
 n.add("Link", "DCtoACLink", bus0="DCBus", bus1="ACBus", efficiency=eff_converter, p_nom_extendable=True)
 
-n.optimize(solver_name="gurobi")
+m=n.optimize.create_model()
+
+energy_stored = m.variables["Store-e"].loc["now", "Battery"]
+
+m.add_objective(energy_stored.to_linexpr(), overwrite=True, sense="max")
+n.optimize.solve_model(solver_name="gurobi")
+
+# n.optimize(solver_name="gurobi")
 
 # print(n.lines_t.p0)
 # print(n.links_t.p0)
