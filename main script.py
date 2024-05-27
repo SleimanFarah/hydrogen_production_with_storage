@@ -22,7 +22,7 @@ number_of_days = 7
 delivery_period = 24*number_of_days
 # delivery_mass = number_of_days*0.7*24*P_to_H2(1000, 33.3)
 delivery_mass = 2071
-initial_battery = 0
+initial_battery = 500
 initial_hour = 4000
 
 PF_wind = PF_wind[initial_hour+0:initial_hour+delivery_period*2+48]
