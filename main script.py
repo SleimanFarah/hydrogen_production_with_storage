@@ -4,16 +4,18 @@ import random
 from csv_file_function import *
 from function_AC import *
 
-with open('solar_capacity_factor.csv', 'r') as PF_solar_data:
+year = 2018
+
+with open(f'data\{year}\solar_capacity_factor.csv', 'r') as PF_solar_data:
     PF_solar = csv_reader_function(PF_solar_data)
 
-with open('wind_capacity_factor.csv', 'r') as PF_wind_data:
+with open(f'data\{year}\wind_capacity_factor.csv', 'r') as PF_wind_data:
     PF_wind = csv_reader_function(PF_wind_data)
 
-with open('electricity_price.csv', 'r') as price_data:
+with open(f'data\{year}\electricity_price.csv', 'r') as price_data:
     price = np.multiply(csv_reader_function(price_data), 0.001)
 
-with open('co2_intensity.csv', 'r') as CO2int_data:
+with open(f'data\{year}\co2_intensity.csv', 'r') as CO2int_data:
     CO2int = np.multiply(csv_reader_function(CO2int_data), 0.001)
 
 # Initialization of variables
