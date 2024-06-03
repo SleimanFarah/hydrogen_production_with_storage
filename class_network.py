@@ -5,7 +5,7 @@ import numpy as np
 class HydrogenProductionSystem:
 
     def __init__(self, time_left, delivery_period, H2MassRemaining, battery_left,
-                ltp_PF_wind, ltp_PF_solar, ltp_price, ltp_CO2Intensity):
+                operative_PF_wind, operative_PF_solar, operative_price, operative_CO2Intensity):
 
         # The delivery period is in hours
         # The times series are supposed to be dimensioned correctly
@@ -17,10 +17,10 @@ class HydrogenProductionSystem:
         self.H2MassRemaining = H2MassRemaining
         self.battery_left = battery_left
 
-        self.ltp_PF_wind = ltp_PF_wind
-        self.ltp_PF_solar = ltp_PF_solar
-        self.ltp_price = ltp_price
-        self.ltp_CO2Intensity = ltp_CO2Intensity
+        self.operative_PF_wind = operative_PF_wind
+        self.operative_PF_solar = operative_PF_solar
+        self.operative_price = operative_price
+        self.operative_CO2Intensity = operative_CO2Intensity
 
         # Creation of the network
         n = pypsa.Network()
@@ -47,7 +47,7 @@ class HydrogenProductionSystem:
 
 
         # Battery creation
-        battery_capacity = 1000
+        battery_capacity = 0
         n.add("Store", "Battery", bus="BatteryBus", e_nom_extendable=True, e_nom_max=battery_capacity)
 
         # Link values initialization
@@ -67,7 +67,8 @@ class HydrogenProductionSystem:
 
         # Optimization parameters initialization
 
-        self.alpha = 0.5
+        self.alpha = 0
+        self.CO2_price = 0.006  # price of emitting 1 kg of C02
         self.LHV = 33.3    # kWh/kg
 
 
@@ -95,64 +96,71 @@ class HydrogenProductionSystem:
 
 
     def lt_planner(self):
+        if self.time_left == 24:
+            self.ltp_target_mass = self.H2MassRemaining
+        else:
+            n = self.n
+            time_left = self.time_left
+            delivery_period = self.delivery_period
+            n.set_snapshots(range(time_left))
+            n.stores.e_nom_extendable["H2gen"] = True
+            n.loads.p_set["H2gen"] = 0
+            n.stores.e_initial["Battery"] = self.battery_left
 
-        n = self.n
-        time_left = self.time_left
-        delivery_period = self.delivery_period
-        n.set_snapshots(range(delivery_period+24))
-        n.stores.e_nom_extendable["H2gen"] = True
-        n.loads.p_set["H2gen"] = 0
-        n.stores.e_initial["Battery"] = self.battery_left
+            ltp_PF_wind = self.operative_PF_wind[0:time_left]
+            ltp_PF_solar = self.operative_PF_solar[0:time_left]
+            ltp_price = self.operative_price[0:time_left]
+            ltp_CO2Intensity = self.operative_CO2Intensity[0:time_left]
 
-        n.generators_t.p_max_pu["Solar"] = self.ltp_PF_solar
-        n.generators_t.p_max_pu["Wind"] = self.ltp_PF_wind
-        n.generators_t.p_min_pu["Solar"] = self.ltp_PF_solar
-        n.generators_t.p_min_pu["Wind"] = self.ltp_PF_wind
+            n.generators_t.p_max_pu["Solar"] = ltp_PF_solar
+            n.generators_t.p_max_pu["Wind"] = ltp_PF_wind
+            n.generators_t.p_min_pu["Solar"] = ltp_PF_solar
+            n.generators_t.p_min_pu["Wind"] = ltp_PF_wind
 
-        m = n.optimize.create_model()
+            m = n.optimize.create_model()
 
-        # total_hydrolyzer_energy = m.variables["Store-e"].loc[time_left+23, "H2gen"]
-        # total_H2_required_energy = convert_functions.H2_to_P(self.H2MassRemaining, self.LHV)
-        # cstr = total_hydrolyzer_energy == total_H2_required_energy
-        # m.add_constraints(cstr, name="target match")
+                # total_hydrolyzer_energy = m.variables["Store-e"].loc[time_left+23, "H2gen"]
+                # total_H2_required_energy = convert_functions.H2_to_P(self.H2MassRemaining, self.LHV)
+                # cstr = total_hydrolyzer_energy == total_H2_required_energy
+                # m.add_constraints(cstr, name="target match")
 
-        total_hydrolyzer_energy = -m.variables["Store-p"].loc[delivery_period+24-(10+time_left), "H2gen"]
-        for i in range(delivery_period+24-(10+time_left)+1, delivery_period+24-10):
-            total_hydrolyzer_energy = total_hydrolyzer_energy - m.variables["Store-p"].loc[i, "H2gen"]
-        total_H2_required_energy = convert_functions.H2_to_P(self.H2MassRemaining, self.LHV)
-        cstr = total_hydrolyzer_energy == total_H2_required_energy
-        m.add_constraints(cstr, name="target match")
+            total_hydrolyzer_energy = -m.variables["Store-p"].loc[0, "H2gen"]
+            for i in range(1, time_left):
+                total_hydrolyzer_energy = total_hydrolyzer_energy - m.variables["Store-p"].loc[i, "H2gen"]
+            total_H2_required_energy = convert_functions.H2_to_P(self.H2MassRemaining, self.LHV)
+            cstr = total_hydrolyzer_energy == total_H2_required_energy
+            m.add_constraints(cstr, name="target match")
 
-        # total_hydrolyzer_energy = m.variables["Link-p"].loc[0, "H2Link"]*self.eff_electrolysis
-        # for i in range(1, time_left+23):
-        #     total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Link-p"].loc[i, "H2Link"]*self.eff_electrolysis
-        # total_H2_required_energy = convert_functions.H2_to_P(self.H2MassRemaining, self.LHV)
-        # cstr = total_hydrolyzer_energy == total_H2_required_energy
-        # m.add_constraints(cstr, name="target match")
+                # total_hydrolyzer_energy = m.variables["Link-p"].loc[0, "H2Link"]*self.eff_electrolysis
+                # for i in range(1, time_left+23):
+                #     total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Link-p"].loc[i, "H2Link"]*self.eff_electrolysis
+                # total_H2_required_energy = convert_functions.H2_to_P(self.H2MassRemaining, self.LHV)
+                # cstr = total_hydrolyzer_energy == total_H2_required_energy
+                # m.add_constraints(cstr, name="target match")
 
-        for i in range(delivery_period+23):
-            cstr = -self.hydrolyzer_capacity*self.hydrolyzer_ramp_limit <= m.variables["Store-p"].loc[i, "H2gen"] - m.variables["Store-p"].loc[i, "H2gen"] <= self.hydrolyzer_capacity*self.hydrolyzer_ramp_limit
-            m.add_constraints(cstr, name="ramp limit at time {}".format(i))
+            for i in range(time_left-1):
+                cstr = -self.hydrolyzer_capacity*self.hydrolyzer_ramp_limit*self.eff_electrolysis <= m.variables["Store-p"].loc[i, "H2gen"] - m.variables["Store-p"].loc[i+1, "H2gen"] <= self.hydrolyzer_capacity*self.hydrolyzer_ramp_limit*self.eff_electrolysis
+                m.add_constraints(cstr, name="ramp limit at time {}".format(i))
 
-        initial_energy = m.variables["Store-e"].loc[0, "Battery"]
-        final_energy = m.variables["Store-e"].loc[delivery_period+23, "Battery"]
-        cstr = initial_energy == final_energy
-        m.add_constraints(cstr, name="battery sustainability")
+            initial_energy = m.variables["Store-e"].loc[0, "Battery"]
+            final_energy = m.variables["Store-e"].loc[time_left-1, "Battery"]
+            cstr = initial_energy == final_energy
+            m.add_constraints(cstr, name="battery sustainability")
 
-        expr = m.variables["Link-p"].loc[0, "BuyLink"] * (self.alpha * self.ltp_CO2Intensity[0] + (1 - self.alpha) * self.ltp_price[0])
-        for i in range(1, delivery_period+24):
-            expr = expr + m.variables["Link-p"].loc[i, "BuyLink"] * (self.alpha * self.ltp_CO2Intensity[i] + (1 - self.alpha) * self.ltp_price[i])
+            expr = m.variables["Link-p"].loc[0, "BuyLink"] * (self.alpha * ltp_CO2Intensity[0] + (1 - self.alpha) * ltp_price[0])
+            for i in range(1, time_left):
+                expr = expr + m.variables["Link-p"].loc[i, "BuyLink"] * (self.alpha * ltp_CO2Intensity[i] * self.CO2_price + (1 - self.alpha) * ltp_price[i])
 
-        m.add_objective(expr, overwrite=True, sense="min")
+            m.add_objective(expr, overwrite=True, sense="min")
 
-        n.optimize.solve_model(solver_name="gurobi")
+            n.optimize.solve_model(solver_name="gurobi")
 
-        self.ltp_target_mass = convert_functions.P_to_H2((n.stores_t.p["H2gen"][delivery_period+24-(10+time_left):delivery_period+24-(10+time_left)+24].sum()), self.LHV)
-        self.ltp_H2_target = self.ltp_H2_target + [self.ltp_target_mass]
+            self.ltp_target_mass = -convert_functions.P_to_H2((n.stores_t.p["H2gen"][time_left-34:time_left-10].sum()), self.LHV)
+            self.ltp_H2_target = self.ltp_H2_target + [self.ltp_target_mass]
 
-        self.ltp_H2_series = self.ltp_H2_series + [convert_functions.P_to_H2(n.stores_t.p["H2gen"], self.LHV)]
+            self.ltp_H2_series = self.ltp_H2_series + [convert_functions.P_to_H2(n.stores_t.p["H2gen"], self.LHV)]
 
-        self.ltp_pf_series = self.ltp_pf_series + [[n.generators_t.p, n.loads_t.p, n.stores_t.p, n.stores_t.e]]
+            self.ltp_pf_series = self.ltp_pf_series + [[n.generators_t.p, n.loads_t.p, n.stores_t.p, n.stores_t.e]]
 
 
     def daily_planner(self):
@@ -166,10 +174,10 @@ class HydrogenProductionSystem:
         delivery_period = self.delivery_period
         time_left = self.time_left
 
-        dp_PF_wind = self.ltp_PF_wind[delivery_period+24-(10+time_left):delivery_period+24-(10+time_left)+34]
-        dp_PF_solar = self.ltp_PF_solar[delivery_period+24-(10+time_left):delivery_period+24-(10+time_left)+34]
-        dp_price = self.ltp_price[delivery_period+24-(10+time_left):delivery_period+24-(10+time_left)+34]
-        dp_CO2Intensity = self.ltp_CO2Intensity[delivery_period+24-(10+time_left):delivery_period+24-(10+time_left)+34]
+        dp_PF_wind = self.operative_PF_wind[time_left-10:time_left+24]
+        dp_PF_solar = self.operative_PF_solar[time_left-10:time_left+24]
+        dp_price = self.operative_price[time_left-10:time_left+24]
+        dp_CO2Intensity = self.operative_CO2Intensity[time_left-10:time_left+24]
 
         n.generators_t.p_max_pu["Solar"] = dp_PF_solar
         n.generators_t.p_max_pu["Wind"] = dp_PF_wind
@@ -182,7 +190,8 @@ class HydrogenProductionSystem:
         total_hydrolyzer_energy = m.variables["Store-p"].loc[0, "H2gen"]
         for i in range(1, 24):
             total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Store-p"].loc[i, "H2gen"]
-        total_H2_required_energy = convert_functions.H2_to_P(self.ltp_target_mass, self.LHV)
+        total_H2_required_energy = -convert_functions.H2_to_P(self.ltp_target_mass, self.LHV)
+        # total_H2_required_energy = convert_functions.H2_to_P(-10, self.LHV)
         cstr = total_hydrolyzer_energy == total_H2_required_energy
         m.add_constraints(cstr, name="target match")
 
@@ -190,6 +199,10 @@ class HydrogenProductionSystem:
         final_energy = m.variables["Store-e"].loc[33, "Battery"]
         cstr = initial_energy == final_energy
         m.add_constraints(cstr, name="battery sustainability")
+
+        for i in range(33):
+            cstr = -self.hydrolyzer_capacity*self.hydrolyzer_ramp_limit*self.eff_electrolysis <= m.variables["Store-p"].loc[i, "H2gen"] - m.variables["Store-p"].loc[i+1, "H2gen"] <= self.hydrolyzer_capacity*self.hydrolyzer_ramp_limit*self.eff_electrolysis
+            m.add_constraints(cstr, name="ramp limit at time {}".format(i))
 
 
         # total_hydrolyzer_energy = m.variables["Link-p"].loc[0, "H2Link"]*self.eff_electrolysis
@@ -205,7 +218,7 @@ class HydrogenProductionSystem:
 
         expr = m.variables["Link-p"].loc[0, "BuyLink"] * (self.alpha * dp_CO2Intensity[0] + (1 - self.alpha) * dp_price[0])
         for i in range(1, 34):
-            expr = expr + m.variables["Link-p"].loc[i, "BuyLink"] * (self.alpha * dp_CO2Intensity[i] + (1 - self.alpha) * dp_price[i])
+            expr = expr + m.variables["Link-p"].loc[i, "BuyLink"] * (self.alpha * dp_CO2Intensity[i] * self.CO2_price + (1 - self.alpha) * dp_price[i])
 
         # total_energy = m.variables["Link-p"].loc[0, "BuyLink"]
         # for i in range(1, 33):
@@ -235,10 +248,10 @@ class HydrogenProductionSystem:
         n.stores.e_nom_extendable["H2gen"] = False
         n.stores.e_initial["Battery"] = self.battery_left
 
-        dr_PF_wind = self.ltp_PF_wind[delivery_period+24-(10+time_left):delivery_period+24-(10+time_left)+24]
-        dr_PF_solar = self.ltp_PF_solar[delivery_period+24-(10+time_left):delivery_period+24-(10+time_left)+24]
-        dr_price = self.ltp_price[delivery_period+24-(10+time_left):delivery_period+24-(10+time_left)+24]
-        dr_CO2Intensity = self.ltp_CO2Intensity[delivery_period+24-(10+time_left):delivery_period+24-(10+time_left)+24]
+        dr_PF_wind = self.operative_PF_wind[time_left-10:time_left+14]
+        dr_PF_solar = self.operative_PF_solar[time_left-10:time_left+14]
+        dr_price = self.operative_price[time_left-10:time_left+14]
+        dr_CO2Intensity = self.operative_CO2Intensity[time_left-10:time_left+14]
 
         n.loads_t.p_set["H2gen"] = self.dp_hydro_hourly_schedule
         # n.stores_t.p_set["Battery"] = self.dp_battery_hourly_schedule
@@ -261,7 +274,7 @@ class HydrogenProductionSystem:
 
         expr = m.variables["Link-p"].loc[0, "BuyLink"] * (self.alpha * dr_CO2Intensity[0] + (1 - self.alpha) * dr_price[0])
         for i in range(1, 24):
-            expr = expr + m.variables["Link-p"].loc[i, "BuyLink"] * (self.alpha * dr_CO2Intensity[i] + (1 - self.alpha) * dr_price[i])
+            expr = expr + m.variables["Link-p"].loc[i, "BuyLink"] * (self.alpha * dr_CO2Intensity[i] * self.CO2_price + (1 - self.alpha) * dr_price[i])
 
         # total_energy = m.variables["Link-p"].loc[0, "BuyLink"]
         # for i in range(1, 23):
@@ -287,11 +300,22 @@ class HydrogenProductionSystem:
         self.electricity_balance = self.electricity_cost - self.electricity_revenue + self.opportunity_cost
 
 
-# if __name__ == '__main__':
-#     hydrogen_plant = HydrogenProductionSystem(1, 1, 10, 0, 1, 1, [1], [1])
-#     hydrogen_plant.lt_planner()
-#     hydrogen_plant.daily_planner()
-#     hydrogen_plant.realisation()
-#     print(hydrogen_plant.ltp_pf_series)
-#     print(hydrogen_plant.dp_pf_series)
-#     print(hydrogen_plant.dr_pf_series)
+if __name__ == '__main__':
+    import random
+    PF_wind = [random.uniform(0, 1) for _ in range(48)]
+    PF_solar = [random.uniform(0, 1) for _ in range(48)]
+    price = [random.uniform(1, 10) for _ in range(48)]
+    CO2int = [random.uniform(1, 10) for _ in range(48)]
+    hydrogen_plant = HydrogenProductionSystem(24, 24, 300, 0, PF_wind, PF_solar, price, CO2int)
+    # hydrogen_plant.lt_planner()
+    hydrogen_plant.daily_planner()
+    hydrogen_plant.realisation()
+    # print(hydrogen_plant.ltp_pf_series)
+    # print(hydrogen_plant.ltp_H2_target)
+    # print(dp_Hydro_plan)
+    print(hydrogen_plant.dp_pf_series)
+    print(hydrogen_plant.dr_pf_series)
+    print(hydrogen_plant.total_production)
+    # print(dr_pf_series[0][1].sum())
+    print(hydrogen_plant.electricity_balance/hydrogen_plant.total_production)
+    print(hydrogen_plant.CO2_emissions/hydrogen_plant.total_production)
