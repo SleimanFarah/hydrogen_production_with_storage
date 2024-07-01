@@ -6,5 +6,5 @@ def Annualized_cost(LoanRate, LifeExpectancy, Cost, Maintenance):
     else:
         CRF=1
 
-    AC=(CRF*Cost+Maintenance*LifeExpectancy)/LifeExpectancy
+    AC=CRF*Cost+Maintenance
     return AC
