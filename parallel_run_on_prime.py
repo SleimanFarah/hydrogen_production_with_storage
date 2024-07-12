@@ -1,6 +1,6 @@
 import main_script
 
-print("TEST")
+print("Test message")
 
 
 
