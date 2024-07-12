@@ -1,8 +1,6 @@
 import main_script
 
+print("TEST")
 
 
-main_script.run_fun()
-
-# def fun_parallel_run_on_prime(alphas):
 
