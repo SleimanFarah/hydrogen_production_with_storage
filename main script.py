@@ -239,9 +239,7 @@ for alpha in [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
     df = pd.DataFrame(array).T
     if battery_on:
         df.to_excel(
-            excel_writer="C:/Users/sacha/PycharmProjects/projet_SIRD/résultats/d2d/d2d_battery_on_period{nd}d_alpha{alpha}.xlsx".format(
-                alpha=alpha, nd=number_of_days))
+            excel_writer="d2d_battery_on_period{nd}d_alpha{alpha}.xlsx".format(alpha=alpha, nd=number_of_days))
     else:
         df.to_excel(
-            excel_writer="C:/Users/sacha/PycharmProjects/projet_SIRD/résultats/d2d/d2d_battery_off_period{nd}d_alpha{alpha}.xlsx".format(
-                alpha=alpha, nd=number_of_days))
+            excel_writer="d2d_battery_off_period{nd}d_alpha{alpha}.xlsx".format(alpha=alpha, nd=number_of_days))
