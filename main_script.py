@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from csv_file_function import *
 from function_AC import *
 import pandas as pd
+import os, sys
 
 with open('solar_capacity_factor 2018.csv', 'r') as PF_solar_data:
     PF_solar_2018 = csv_reader_function(PF_solar_data)
@@ -47,7 +48,15 @@ with open('co2_intensity 2021.csv', 'r') as CO2int_data:
 battery_on = False
 # alpha = 0.0001
 
-for alpha in [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
+run_on_prime = True
+
+if run_on_prime:
+    alphas = sys.argv[1]
+else:
+    alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
+
+for alpha in alphas:
+    # [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
 
     number_of_days = 365  # number of days in a delivery period
     simulation_period = 1  # number of delivery periods in the simulation
@@ -238,8 +247,6 @@ for alpha in [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
              CO2int, price, ["Minimum price", total_H2_min_cost/total_production], ["H2 CO2 intensity", total_emissions/total_production]]
     df = pd.DataFrame(array).T
     if battery_on:
-        df.to_excel(
-            excel_writer="d2d_battery_on_period{nd}d_alpha{alpha}.xlsx".format(alpha=alpha, nd=number_of_days))
+        df.to_excel(excel_writer=f"d2d_battery_on_period_{number_of_days}d_alpha{alpha}.xlsx")
     else:
-        df.to_excel(
-            excel_writer="d2d_battery_off_period{nd}d_alpha{alpha}.xlsx".format(alpha=alpha, nd=number_of_days))
+        df.to_excel(excel_writer=f"d2d_battery_off_period{number_of_days}d_alpha{alpha}.xlsx")
