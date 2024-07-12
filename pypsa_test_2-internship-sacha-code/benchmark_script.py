@@ -34,7 +34,8 @@ with open('co2_intensity 2019.csv', 'r') as CO2int_data:
 
 # capital_cost_solar = Annualized_cost(0.07, 40, 310000, 9500)
 # capital_cost_wind = Annualized_cost(0.07, 30, 990000, 12600)
-# capital_cost_battery = Annualized_cost(0.07, 25,142000, 540)
+capital_cost_battery = Annualized_cost(0.07, 25,142000, 540)
+capital_cost_electrolyzer = Annualized_cost(0.07, 10, 700000, 14000)
 
 # capital_cost_converter = Annualized_cost(0.07, 15, 20000, 0)
 # capital_cost_grid = Annualized_cost(0.07, 40, 140000, 2800)
@@ -44,12 +45,12 @@ opportunity_cost_nb_0 = 199187.789
 
 # Initialization of variables
 
-battery_on = True
+battery_on = False
 # alpha = 0.001
 
-for alpha in [1]:
-    number_of_days = 365  # number of days in a delivery period
-    simulation_period = 1  # number of delivery periods in the simulation
+for alpha in [0.0001]:
+    number_of_days = 7  # number of days in a delivery period
+    simulation_period = 52  # number of delivery periods in the simulation
     delivery_period = 24*number_of_days
     # delivery_mass = number_of_days*0.7*24*P_to_H2(1000, 33.3)
     total_mass = (108000/8760)*delivery_period*simulation_period
@@ -62,7 +63,7 @@ for alpha in [1]:
     # capital_cost = (capital_cost_solar+capital_cost_wind+capital_cost_electrolyzer+capital_cost_converter+capital_cost_grid)*delivery_period*simulation_period/8760
     # capital_cost = 0
 
-    capital_cost_electrolyzer = Annualized_cost(0.07, 10, 700000, 14000)
+
 
 
     # benchmark_H2_prod = []
@@ -88,12 +89,16 @@ for alpha in [1]:
     # opportunity_cost = -hydrogen_plant.benchmark_electricity_balance
 
     opportunity_cost = opportunity_cost_nb_0
-    H2_min_price = net_cost + opportunity_cost + capital_cost_electrolyzer
+
+
+    capital_cost = capital_cost_electrolyzer
+    H2_min_price = net_cost + opportunity_cost + capital_cost
     # H2_min_price = net_cost
 
     print(benchmark_pf_series)
     print(total_mass)
     print(production)
+    print(net_cost)
     # print(hydrogen_plant.benchmark_d2d_CO2)
     print(H2_min_price/production)
     print(emissions/production)
@@ -132,4 +137,4 @@ for alpha in [1]:
     if battery_on:
         df.to_excel(excel_writer = "C:/Users/sacha/PycharmProjects/projet_SIRD/résultats/benchmark/battery_on_period{nd}d_alpha{alpha}.xlsx".format(alpha=alpha, nd=number_of_days))
     else:
-        df.to_excel(excel_writer = "C:/Users/sacha/PycharmProjects/projet_SIRD/résultats/benchmark/battery_off_period{nd}d_alpha{alpha}.xlsx".format(alpha=alpha, nd=number_of_days))
+        df.to_excel(excel_writer = "C:/Users/sacha/PycharmProjects/projet_SIRD/résultats/opportunity_battery_off_period{nd}d_alpha{alpha}.xlsx".format(alpha=alpha, nd=number_of_days))

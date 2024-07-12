@@ -47,7 +47,7 @@ with open('co2_intensity 2021.csv', 'r') as CO2int_data:
 battery_on = False
 # alpha = 0.0001
 
-for alpha in [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]:
+for alpha in [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
 
     number_of_days = 365  # number of days in a delivery period
     simulation_period = 1  # number of delivery periods in the simulation
@@ -66,7 +66,7 @@ for alpha in [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]:
     opportunity_cost_nb_1 = 198002.809
     # capital_cost_solar = Annualized_cost(0, 40, 310000, 9500)
     # capital_cost_wind = Annualized_cost(0, 30, 990000, 12600)
-    # capital_cost_battery = Annualized_cost(0, 40, 700000, 540)
+    capital_cost_battery = Annualized_cost(0, 40, 700000, 540)
     # capital_cost_electrolyzer = Annualized_cost(0, 10, 700000, 14000)
     # capital_cost_converter = Annualized_cost(0, 15, 40000, 0)
     # capital_cost_grid = Annualized_cost(0, 40, 140000, 2800)
@@ -160,11 +160,11 @@ for alpha in [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]:
             # total_H2_min_cost = (total_H2_min_cost + net_cost + opportunity_cost)
             total_H2_min_cost = (total_H2_min_cost + net_cost)
 
-            solar_pf_series = solar_pf_series + list(dr_pf_series[i][0]["Solar"])
-            wind_pf_series = wind_pf_series + list(dr_pf_series[i][0]["Wind"])
-            fromgrid_pf_series = fromgrid_pf_series + list(dr_pf_series[i][0]["NetworkImport"])
-            togrid_pf_series = togrid_pf_series + list(dr_pf_series[i][0]["NetworkExport"])
-            H2_pf_series = H2_pf_series + list(dr_pf_series[i][1]["H2gen"])
+            solar_pf_series = solar_pf_series + list(dr_pf_series[i+j*number_of_days][0]["Solar"])
+            wind_pf_series = wind_pf_series + list(dr_pf_series[i+j*number_of_days][0]["Wind"])
+            fromgrid_pf_series = fromgrid_pf_series + list(dr_pf_series[i+j*number_of_days][0]["NetworkImport"])
+            togrid_pf_series = togrid_pf_series + list(dr_pf_series[i+j*number_of_days][0]["NetworkExport"])
+            H2_pf_series = H2_pf_series + list(dr_pf_series[i+j*number_of_days][1]["H2gen"])
 
             i = i + 1
             time_left = delivery_period - i*24
@@ -179,8 +179,13 @@ for alpha in [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]:
         H2_mass_remaining = delivery_mass
         j = j+1
 
+    if battery_on:
+        capital_cost = capital_cost_electrolyzer
+    else:
+        capital_cost = capital_cost_electrolyzer
 
-    total_H2_min_cost = total_H2_min_cost + total_opportunity_cost + capital_cost_electrolyzer
+
+    total_H2_min_cost = total_H2_min_cost + total_opportunity_cost + capital_cost
 
 
     # print(ltp_pf_series)
@@ -220,14 +225,14 @@ for alpha in [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99]:
     power2hydrogen = ["Power to hydrogen (kW)"] + H2_pf_series
 
     curtailed_solar = ["Curtailed solar power (kW)"] + (
-                np.multiply(PF_solar[24:24+delivery_period*simulation_period], 1000) - np.array(solar_pf_series)).tolist()
+                np.multiply(PF_solar[delivery_period:delivery_period*(simulation_period+1)], 1000) - np.array(solar_pf_series)).tolist()
 
     curtailed_wind = ["Curtailed wind power (kW)"] + (
-                np.multiply(PF_wind[24:24+delivery_period*simulation_period], 1000) - np.array(wind_pf_series)).tolist()
+                np.multiply(PF_wind[delivery_period:delivery_period*(simulation_period+1)], 1000) - np.array(wind_pf_series)).tolist()
 
     # CO2_prod = ["CO2 emitted (kg)"]+list(hydrogen_plant.benchmark_h2h_CO2.T)
-    CO2int = ["CO2 intensity"] + CO2int[24:]
-    price = ["Electricity price"] + price[24:]
+    CO2int = ["CO2 intensity"] + CO2int[delivery_period:]
+    price = ["Electricity price"] + price[delivery_period:]
 
     array = [snapshots, solar_pf, wind_pf, powerfromgrid_pf, power2grid_pf, power2hydrogen, curtailed_solar, curtailed_wind,
              CO2int, price, ["Minimum price", total_H2_min_cost/total_production], ["H2 CO2 intensity", total_emissions/total_production]]
