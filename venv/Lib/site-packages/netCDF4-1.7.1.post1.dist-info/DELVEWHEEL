@@ -1,0 +1,2 @@
+Version: 1.7.0
+Arguments: ['C:\\hostedtoolcache\\windows\\Python\\3.12.4\\x64\\Scripts\\delvewheel', 'repair', '-w', 'C:\\Users\\runneradmin\\AppData\\Local\\Temp\\cibw-run-yp1aihbs\\cp39-win_amd64\\repaired_wheel', 'C:\\Users\\runneradmin\\AppData\\Local\\Temp\\cibw-run-yp1aihbs\\cp39-win_amd64\\built_wheel\\netCDF4-1.7.1.post1-cp39-cp39-win_amd64.whl']
