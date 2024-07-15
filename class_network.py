@@ -1,6 +1,6 @@
 import convert_functions
 import numpy as np
-import pypsatopo
+# import pypsatopo
 from function_positive_only import *
 from function_positive_only_float import *
 
