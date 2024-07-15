@@ -7,58 +7,55 @@ from function_AC import *
 import pandas as pd
 import os, sys
 
-with open('solar_capacity_factor 2018.csv', 'r') as PF_solar_data:
-    PF_solar_2018 = csv_reader_function(PF_solar_data)
 
-with open('wind_capacity_factor 2018.csv', 'r') as PF_wind_data:
-    PF_wind_2018 = csv_reader_function(PF_wind_data)
+def run_system_simulation(alpha):
 
-with open('electricity_price 2018.csv', 'r') as price_data:
-    price_2018 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
+    with open('solar_capacity_factor 2018.csv', 'r') as PF_solar_data:
+        PF_solar_2018 = csv_reader_function(PF_solar_data)
 
-with open('co2_intensity 2018.csv', 'r') as CO2int_data:
-    CO2int_2018 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
+    with open('wind_capacity_factor 2018.csv', 'r') as PF_wind_data:
+        PF_wind_2018 = csv_reader_function(PF_wind_data)
 
-with open('solar_capacity_factor 2019.csv', 'r') as PF_solar_data:
-    PF_solar_2019 = csv_reader_function(PF_solar_data)
+    with open('electricity_price 2018.csv', 'r') as price_data:
+        price_2018 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-with open('wind_capacity_factor 2019.csv', 'r') as PF_wind_data:
-    PF_wind_2019 = csv_reader_function(PF_wind_data)
+    with open('co2_intensity 2018.csv', 'r') as CO2int_data:
+        CO2int_2018 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
-with open('electricity_price 2019.csv', 'r') as price_data:
-    price_2019 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
+    with open('solar_capacity_factor 2019.csv', 'r') as PF_solar_data:
+        PF_solar_2019 = csv_reader_function(PF_solar_data)
 
-with open('co2_intensity 2019.csv', 'r') as CO2int_data:
-    CO2int_2019 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
+    with open('wind_capacity_factor 2019.csv', 'r') as PF_wind_data:
+        PF_wind_2019 = csv_reader_function(PF_wind_data)
 
-with open('solar_capacity_factor 2021.csv', 'r') as PF_solar_data:
-    PF_solar_2021 = csv_reader_function(PF_solar_data)
+    with open('electricity_price 2019.csv', 'r') as price_data:
+        price_2019 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-with open('wind_capacity_factor 2021.csv', 'r') as PF_wind_data:
-    PF_wind_2021 = csv_reader_function(PF_wind_data)
+    with open('co2_intensity 2019.csv', 'r') as CO2int_data:
+        CO2int_2019 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
-with open('electricity_price 2021.csv', 'r') as price_data:
-    price_2021 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
+    with open('solar_capacity_factor 2021.csv', 'r') as PF_solar_data:
+        PF_solar_2021 = csv_reader_function(PF_solar_data)
 
-with open('co2_intensity 2021.csv', 'r') as CO2int_data:
-    CO2int_2021 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
+    with open('wind_capacity_factor 2021.csv', 'r') as PF_wind_data:
+        PF_wind_2021 = csv_reader_function(PF_wind_data)
 
-# Initialization of variables
+    with open('electricity_price 2021.csv', 'r') as price_data:
+        price_2021 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-battery_on = False
-# alpha = 0.0001
+    with open('co2_intensity 2021.csv', 'r') as CO2int_data:
+        CO2int_2021 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
-run_on_prime = True
+    # Initialization of variables
 
-if run_on_prime:
-    alphas = sys.argv[1]
-else:
-    alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
+    battery_on = False
+    # alpha = 0.0001
 
-for alpha in alphas:
+    # for alpha in alphas:
+    print(alpha)
     # [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
 
-    number_of_days = 365  # number of days in a delivery period
+    number_of_days = 1  # number of days in a delivery period
     simulation_period = 1  # number of delivery periods in the simulation
     delivery_period = 24*number_of_days
     # delivery_mass = number_of_days*0.7*24*P_to_H2(1000, 33.3)
@@ -250,3 +247,11 @@ for alpha in alphas:
         df.to_excel(excel_writer=f"d2d_battery_on_period_{number_of_days}d_alpha{alpha}.xlsx")
     else:
         df.to_excel(excel_writer=f"d2d_battery_off_period{number_of_days}d_alpha{alpha}.xlsx")
+
+
+if __name__ == "__main__":
+
+    # alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
+    alphas = [0.1, 0.2]
+    for alpha in alphas:
+        run_system_simulation(alpha)
