@@ -6,7 +6,6 @@ from csv_file_function import *
 from function_AC import *
 import pandas as pd
 import os, sys
-import cProfile
 
 
 def run_system_simulation(alpha):
@@ -254,9 +253,6 @@ if __name__ == "__main__":
 
     # alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
     alphas = [0.1, 0.2]
-    profiler = cProfile.Profile()
     for alpha in alphas:
-        profiler.enable()
         run_system_simulation(alpha)
-        profiler.disable()
-    profiler.print_stats()
+
