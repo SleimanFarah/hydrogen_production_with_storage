@@ -1,0 +1,8 @@
+Maximize
+  x + y
+Subject To
+  x + y - 2 = 0
+Bounds
+  x <= 5
+  y <= 3
+End
