@@ -47,7 +47,7 @@ with open('co2_intensity 2021.csv', 'r') as CO2int_data:
 battery_on = False
 # alpha = 0.0001
 
-for alpha in [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
+for alpha in [0.3]:
 
     number_of_days = 365  # number of days in a delivery period
     simulation_period = 1  # number of delivery periods in the simulation
@@ -56,6 +56,7 @@ for alpha in [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
     total_mass = (108000/8760)*delivery_period*simulation_period
     # total_mass = 0
     delivery_mass = total_mass/simulation_period
+    # delivery_mass = 100
     initial_battery = 0
     initial_hour = 0
 

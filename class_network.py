@@ -163,9 +163,7 @@ class HydrogenProductionSystem:
                 # cstr = total_hydrolyzer_energy == total_H2_required_energy
                 # m.add_constraints(cstr, name="target match")
 
-            total_hydrolyzer_energy = -m.variables["Store-p"].loc[0, "H2gen"]
-            for i in range(1, time_left):
-                total_hydrolyzer_energy = total_hydrolyzer_energy - m.variables["Store-p"].loc[i, "H2gen"]
+            total_hydrolyzer_energy = -m.variables["Store-p"].loc[range(time_left), "H2gen"].sum()
             total_H2_required_energy = convert_functions.H2_to_P(self.H2MassRemaining, self.LHV)
             cstr = total_hydrolyzer_energy == total_H2_required_energy
             m.add_constraints(cstr, name="target match")
@@ -187,15 +185,22 @@ class HydrogenProductionSystem:
                 cstr = initial_energy == final_energy
                 m.add_constraints(cstr, name="battery sustainability")
 
+            # if self.battery_on:
+            #     expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * ltp_CO2Intensity[0] * self.CO2_price + (1 - self.alpha) * ((ltp_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"] - m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[0, "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[0, "ChargeLink"] +m.variables["Link-p"].loc[0, "DischargeLink"])))
+            #     for i in range(1, time_left):
+            #         expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * ltp_CO2Intensity[i] * self.CO2_price + (1 - self.alpha) * ((ltp_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"] - m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[i, "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[i, "ChargeLink"] +m.variables["Link-p"].loc[i, "DischargeLink"])))
+            #     m.add_objective(expr, overwrite=True, sense="min")
+            # else:
+            #     expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * ltp_CO2Intensity[0] * self.CO2_price + (1 - self.alpha) * ((ltp_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"] - m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[0, "Solar"]))
+            #     for i in range(1, time_left):
+            #         expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * ltp_CO2Intensity[i] * self.CO2_price + (1 - self.alpha) * ((ltp_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"] - m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[i, "Solar"]))
+            #     m.add_objective(expr, overwrite=True, sense="min")
+
             if self.battery_on:
-                expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * ltp_CO2Intensity[0] * self.CO2_price + (1 - self.alpha) * ((ltp_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"] - m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[0, "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[0, "ChargeLink"] +m.variables["Link-p"].loc[0, "DischargeLink"])))
-                for i in range(1, time_left):
-                    expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * ltp_CO2Intensity[i] * self.CO2_price + (1 - self.alpha) * ((ltp_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"] - m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[i, "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[i, "ChargeLink"] +m.variables["Link-p"].loc[i, "DischargeLink"])))
+                expr = (m.variables["Generator-p"].loc[range(time_left), "NetworkImport"] * self.alpha * ltp_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * (ltp_price * (m.variables["Generator-p"].loc[range(time_left), "NetworkImport"] - m.variables["Generator-p"].loc[range(time_left), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(time_left), "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[range(time_left), "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[range(time_left), "ChargeLink"] +m.variables["Link-p"].loc[range(time_left), "DischargeLink"]))).sum()
                 m.add_objective(expr, overwrite=True, sense="min")
             else:
-                expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * ltp_CO2Intensity[0] * self.CO2_price + (1 - self.alpha) * ((ltp_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"] - m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[0, "Solar"]))
-                for i in range(1, time_left):
-                    expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * ltp_CO2Intensity[i] * self.CO2_price + (1 - self.alpha) * ((ltp_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"] - m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[i, "Solar"]))
+                expr = (m.variables["Generator-p"].loc[range(time_left), "NetworkImport"] * self.alpha * ltp_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * (ltp_price * (m.variables["Generator-p"].loc[range(time_left), "NetworkImport"] -m.variables["Generator-p"].loc[range(time_left), "NetworkExport"]) + (self.operation_cost_wind *m.variables["Generator-p"].loc[range(time_left), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(time_left), "Solar"])).sum()
                 m.add_objective(expr, overwrite=True, sense="min")
 
             n.optimize.solve_model(solver_name="gurobi")
@@ -232,10 +237,8 @@ class HydrogenProductionSystem:
 
         m = n.optimize.create_model()
 
-        total_hydrolyzer_energy = m.variables["Store-p"].loc[0, "H2gen"]
-        for i in range(1, 24):
-            total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Store-p"].loc[i, "H2gen"]
-        total_H2_required_energy = -convert_functions.H2_to_P(self.ltp_target_mass, self.LHV)
+        total_hydrolyzer_energy = -m.variables["Store-p"].loc[range(24), "H2gen"].sum()
+        total_H2_required_energy = convert_functions.H2_to_P(self.ltp_target_mass, self.LHV)
         # total_H2_required_energy = convert_functions.H2_to_P(-10, self.LHV)
         cstr = total_hydrolyzer_energy == total_H2_required_energy
         m.add_constraints(cstr, name="target match")
@@ -262,15 +265,22 @@ class HydrogenProductionSystem:
         #     cstr = m.variables["Link-p"].loc[i, "H2Link"] <= self.hydrolyzer_capacity
         #     m.add_constraints(cstr, name="limited capacity at time {}".format(i))
 
+        # if self.battery_on:
+        #     expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * dp_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * ((dp_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"]-m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[0, "ChargeLink"]+m.variables["Link-p"].loc[0, "DischargeLink"])))
+        #     for i in range(1, 34):
+        #         expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * dp_CO2Intensity[i]*self.CO2_price + (1 - self.alpha) * ((dp_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"]-m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[i, "ChargeLink"]+m.variables["Link-p"].loc[i, "DischargeLink"])))
+        #     m.add_objective(expr, overwrite=True, sense="min")
+        # else:
+        #     expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * dp_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * ((dp_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"]-m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"]))
+        #     for i in range(1, 34):
+        #         expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * dp_CO2Intensity[i]*self.CO2_price + (1 - self.alpha) * ((dp_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"]-m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"]))
+        #     m.add_objective(expr, overwrite=True, sense="min")
+
         if self.battery_on:
-            expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * dp_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * ((dp_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"]-m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[0, "ChargeLink"]+m.variables["Link-p"].loc[0, "DischargeLink"])))
-            for i in range(1, 34):
-                expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * dp_CO2Intensity[i]*self.CO2_price + (1 - self.alpha) * ((dp_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"]-m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[i, "ChargeLink"]+m.variables["Link-p"].loc[i, "DischargeLink"])))
+            expr = (m.variables["Generator-p"].loc[range(34), "NetworkImport"] * self.alpha * dp_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * ((dp_price) * (m.variables["Generator-p"].loc[range(34), "NetworkImport"] -m.variables["Generator-p"].loc[range(34), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(34), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(34), "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[range(34), "ChargeLink"] +m.variables["Link-p"].loc[range(34), "DischargeLink"]))).sum()
             m.add_objective(expr, overwrite=True, sense="min")
         else:
-            expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * dp_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * ((dp_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"]-m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"]))
-            for i in range(1, 34):
-                expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * dp_CO2Intensity[i]*self.CO2_price + (1 - self.alpha) * ((dp_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"]-m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"]))
+            expr = (m.variables["Generator-p"].loc[range(34), "NetworkImport"] * self.alpha * dp_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * ((dp_price) * (m.variables["Generator-p"].loc[range(34), "NetworkImport"] -m.variables["Generator-p"].loc[range(34), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(34), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(34), "Solar"])).sum()
             m.add_objective(expr, overwrite=True, sense="min")
 
         # expr = m.variables["Generator-p"].loc[0, "Network"].where(m.variables["Generator-p"].loc[0, "Network"] >= 0) * self.alpha * dp_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * (pof(dp_price[0]) * (m.variables["Generator-p"].loc[0, "Network"]) + self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[0, "ChargeLink"]+m.variables["Link-p"].loc[0, "DischargeLink"]))
@@ -333,19 +343,18 @@ class HydrogenProductionSystem:
             cstr = initial_energy == final_energy
             m.add_constraints(cstr, name="battery sustainability")
 
-        for i in range(24):
-            hydrolyzer_energy = m.variables["Store-p"].loc[i, "H2gen"]
-            H2_required_energy = self.dp_hydro_hourly_schedule[i]
-            cstr = hydrolyzer_energy == H2_required_energy
-            m.add_constraints(cstr, name="target match {}".format(i))
+        # hydrolyzer_energy = m.variables["Store-p"].loc[range(24), "H2gen"].sum()
+        # H2_required_energy = self.dp_hydro_hourly_schedule.sum()
+        # cstr = hydrolyzer_energy == H2_required_energy
+        # m.add_constraints(cstr, name="target match {}".format(i))
 
-        # total_hydrolyzer_energy = m.variables["Store-p"].loc[0, "H2gen"]
-        # for i in range(1, 24):
-        #     total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Store-p"].loc[i, "H2gen"]
-        # total_H2_required_energy = -convert_functions.H2_to_P(self.ltp_target_mass, self.LHV)
-        # # total_H2_required_energy = convert_functions.H2_to_P(-10, self.LHV)
-        # cstr = total_hydrolyzer_energy == total_H2_required_energy
-        # m.add_constraints(cstr, name="target match")
+        total_hydrolyzer_energy = m.variables["Store-p"].loc[0, "H2gen"]
+        for i in range(1, 24):
+            total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Store-p"].loc[i, "H2gen"]
+        total_H2_required_energy = -convert_functions.H2_to_P(self.ltp_target_mass, self.LHV)
+        # total_H2_required_energy = convert_functions.H2_to_P(-10, self.LHV)
+        cstr = total_hydrolyzer_energy == total_H2_required_energy
+        m.add_constraints(cstr, name="target match")
 
         # for i in range(0, 24):
         #     cstr = m.variables["Link-p"].loc[i, "H2Link"] <= self.hydrolyzer_capacity
@@ -355,17 +364,23 @@ class HydrogenProductionSystem:
         # for i in range(1, 24):
         #     expr = expr + m.variables["Generator-p"].loc[i, "Network"].where(m.variables["Generator-p"].loc[i, "Network"] >= 0) * self.alpha * dr_CO2Intensity[i] + (1 - self.alpha) * (pof(dr_price[i]) * (m.variables["Generator-p"].loc[i, "Network"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[i, "ChargeLink"]+m.variables["Link-p"].loc[i, "DischargeLink"])))
 
+        # if self.battery_on:
+        #     expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * dr_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * ((dr_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"]-m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[0, "ChargeLink"]+m.variables["Link-p"].loc[0, "DischargeLink"])))
+        #     for i in range(1, 24):
+        #         expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * dr_CO2Intensity[i]*self.CO2_price + (1 - self.alpha) * ((dr_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"]-m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[i, "ChargeLink"]+m.variables["Link-p"].loc[i, "DischargeLink"])))
+        #     m.add_objective(expr, overwrite=True, sense="min")
+        # else:
+        #     expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * dr_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * ((dr_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"]-m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"]))
+        #     for i in range(1, 24):
+        #         expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * dr_CO2Intensity[i]*self.CO2_price + (1 - self.alpha) * ((dr_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"]-m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"]))
+        #     m.add_objective(expr, overwrite=True, sense="min")
+
         if self.battery_on:
-            expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * dr_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * ((dr_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"]-m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[0, "ChargeLink"]+m.variables["Link-p"].loc[0, "DischargeLink"])))
-            for i in range(1, 24):
-                expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * dr_CO2Intensity[i]*self.CO2_price + (1 - self.alpha) * ((dr_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"]-m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[i, "ChargeLink"]+m.variables["Link-p"].loc[i, "DischargeLink"])))
+            expr = (m.variables["Generator-p"].loc[range(24), "NetworkImport"] * self.alpha * dr_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * ((dr_price) * (m.variables["Generator-p"].loc[range(24), "NetworkImport"] -m.variables["Generator-p"].loc[range(24), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(24), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(24), "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[range(24), "ChargeLink"] +m.variables["Link-p"].loc[range(24), "DischargeLink"]))).sum()
             m.add_objective(expr, overwrite=True, sense="min")
         else:
-            expr = m.variables["Generator-p"].loc[0, "NetworkImport"] * self.alpha * dr_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * ((dr_price[0]) * (m.variables["Generator-p"].loc[0, "NetworkImport"]-m.variables["Generator-p"].loc[0, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"]))
-            for i in range(1, 24):
-                expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * dr_CO2Intensity[i]*self.CO2_price + (1 - self.alpha) * ((dr_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"]-m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"]))
+            expr = (m.variables["Generator-p"].loc[range(24), "NetworkImport"] * self.alpha * dr_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * ((dr_price) * (m.variables["Generator-p"].loc[range(24), "NetworkImport"] -m.variables["Generator-p"].loc[range(24), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(24), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(24), "Solar"])).sum()
             m.add_objective(expr, overwrite=True, sense="min")
-
 
 
         # total_energy = m.variables["Link-p"].loc[0, "BuyLink"]
