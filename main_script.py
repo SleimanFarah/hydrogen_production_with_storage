@@ -55,7 +55,7 @@ def run_system_simulation(alpha):
     print(alpha)
     # [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
 
-    number_of_days = 7  # number of days in a delivery period
+    number_of_days = 365  # number of days in a delivery period
     simulation_period = 1  # number of delivery periods in the simulation
     delivery_period = 24*number_of_days
     # delivery_mass = number_of_days*0.7*24*P_to_H2(1000, 33.3)
