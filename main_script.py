@@ -8,7 +8,19 @@ import pandas as pd
 import os, sys
 
 
-def run_system_simulation(alpha):
+def run_system_simulation(year, alpha, time_period):
+
+    with open('solar_capacity_factor 2017.csv', 'r') as PF_solar_data:
+        PF_solar_2017 = csv_reader_function(PF_solar_data)
+
+    with open('wind_capacity_factor 2017.csv', 'r') as PF_wind_data:
+        PF_wind_2017 = csv_reader_function(PF_wind_data)
+
+    with open('electricity_price 2017.csv', 'r') as price_data:
+        price_2017 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
+
+    with open('co2_intensity 2017.csv', 'r') as CO2int_data:
+        CO2int_2017 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
     with open('solar_capacity_factor 2018.csv', 'r') as PF_solar_data:
         PF_solar_2018 = csv_reader_function(PF_solar_data)
@@ -34,6 +46,18 @@ def run_system_simulation(alpha):
     with open('co2_intensity 2019.csv', 'r') as CO2int_data:
         CO2int_2019 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
+    with open('solar_capacity_factor 2020.csv', 'r') as PF_solar_data:
+        PF_solar_2020 = csv_reader_function(PF_solar_data)
+
+    with open('wind_capacity_factor 2020.csv', 'r') as PF_wind_data:
+        PF_wind_2020 = csv_reader_function(PF_wind_data)
+
+    with open('electricity_price 2020.csv', 'r') as price_data:
+        price_2020 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
+
+    with open('co2_intensity 2020.csv', 'r') as CO2int_data:
+        CO2int_2020 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
+
     with open('solar_capacity_factor 2021.csv', 'r') as PF_solar_data:
         PF_solar_2021 = csv_reader_function(PF_solar_data)
 
@@ -46,6 +70,18 @@ def run_system_simulation(alpha):
     with open('co2_intensity 2021.csv', 'r') as CO2int_data:
         CO2int_2021 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
+    with open('solar_capacity_factor 2022.csv', 'r') as PF_solar_data:
+        PF_solar_2022 = csv_reader_function(PF_solar_data)
+
+    with open('wind_capacity_factor 2022.csv', 'r') as PF_wind_data:
+        PF_wind_2022 = csv_reader_function(PF_wind_data)
+
+    with open('electricity_price 2022.csv', 'r') as price_data:
+        price_2022 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
+
+    with open('co2_intensity 2022.csv', 'r') as CO2int_data:
+        CO2int_2022 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
+
     # Initialization of variables
 
     battery_on = True
@@ -55,8 +91,25 @@ def run_system_simulation(alpha):
     print(alpha)
     # [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]:
 
-    number_of_days = 365  # number of days in a delivery period
-    simulation_period = 1  # number of delivery periods in the simulation
+    # year = 2018
+
+    if time_period == "day":
+        number_of_days = 1  # number of days in a delivery period
+        simulation_period = 365  # number of delivery periods in the simulation
+    elif time_period == "week":
+        number_of_days = 7
+        simulation_period = 52
+    elif time_period == "month":
+        number_of_days = 30
+        simulation_period = 12
+    elif time_period == "year":
+        number_of_days = 365
+        simulation_period = 1
+    else:
+        number_of_days = 1
+        simulation_period = 1
+
+
     delivery_period = 24*number_of_days
     # delivery_mass = number_of_days*0.7*24*P_to_H2(1000, 33.3)
     total_mass = (108000/8760)*delivery_period*simulation_period
@@ -82,10 +135,10 @@ def run_system_simulation(alpha):
     # capital_cost = 0
 
 
-    PF_wind = (PF_wind_2018+PF_wind_2019+PF_wind_2021)[initial_hour+8760-delivery_period:]
-    PF_solar = (PF_solar_2018+PF_solar_2019+PF_wind_2021)[initial_hour+8760-delivery_period:]
-    price = (price_2018+price_2019+price_2021)[initial_hour+8760-delivery_period:]
-    CO2int = (CO2int_2018+CO2int_2019+CO2int_2021)[initial_hour+8760-delivery_period:]
+    PF_wind = (PF_wind_2017+PF_wind_2018+PF_wind_2019+PF_wind_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:]
+    PF_solar = (PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:]
+    price = (price_2017+price_2018+price_2019+price_2020+price_2021+price_2022)[initial_hour+8760*(year-2017)-delivery_period:]
+    CO2int = (CO2int_2017+CO2int_2018+CO2int_2019+CO2int_2020+CO2int_2021+CO2int_2022)[initial_hour+8760*(year-2017)-delivery_period:]
 
     ltp_pf_series = []
     ltp_H2_series = []
@@ -244,9 +297,9 @@ def run_system_simulation(alpha):
              CO2int, price, ["Minimum price", total_H2_min_cost/total_production], ["H2 CO2 intensity", total_emissions/total_production]]
     df = pd.DataFrame(array).T
     if battery_on:
-        df.to_excel(excel_writer=f"d2d_battery_on_period_{number_of_days}d_alpha{alpha}.xlsx")
+        df.to_excel(excel_writer=f"d2d_{year}_battery_on_period_{number_of_days}d_alpha{alpha}.xlsx")
     else:
-        df.to_excel(excel_writer=f"d2d_battery_off_period{number_of_days}d_alpha{alpha}.xlsx")
+        df.to_excel(excel_writer=f"d2d_{year}_battery_off_period{number_of_days}d_alpha{alpha}.xlsx")
 
 
 if __name__ == "__main__":
@@ -254,5 +307,5 @@ if __name__ == "__main__":
     alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
 
     for alpha in alphas:
-        run_system_simulation(alpha)
+        run_system_simulation(2020, alpha, "day")
 
