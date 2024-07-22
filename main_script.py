@@ -304,8 +304,10 @@ def run_system_simulation(year, alpha, time_period):
 
 if __name__ == "__main__":
 
+    year = 2020
     alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
+    delivery_period = "day"
 
     for alpha in alphas:
-        run_system_simulation(2020, alpha, "day")
+        run_system_simulation(year, alpha, delivery_period)
 
