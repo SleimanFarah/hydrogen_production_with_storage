@@ -348,9 +348,17 @@ class HydrogenProductionSystem:
         # cstr = hydrolyzer_energy == H2_required_energy
         # m.add_constraints(cstr, name="target match {}".format(i))
 
-        total_hydrolyzer_energy = m.variables["Store-p"].loc[0, "H2gen"]
-        for i in range(1, 24):
-            total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Store-p"].loc[i, "H2gen"]
+        # **********************************************
+        # **********************************************
+        # total_hydrolyzer_energy = m.variables["Store-p"].loc[0, "H2gen"]
+        # for i in range(1, 24):
+        #     total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Store-p"].loc[i, "H2gen"]
+        # **********************************************
+        total_hydrolyzer_energy = m.variables["Store-p"].loc[:, "H2gen"].sum()
+        # **********************************************
+        # **********************************************
+
+
         total_H2_required_energy = -convert_functions.H2_to_P(self.ltp_target_mass, self.LHV)
         # total_H2_required_energy = convert_functions.H2_to_P(-10, self.LHV)
         cstr = total_hydrolyzer_energy == total_H2_required_energy
@@ -576,6 +584,7 @@ class HydrogenProductionSystem:
                                   "Solar"].sum() + self.operation_cost_battery * (
                                           n.links_t.p0["ChargeLink"].sum() + n.links_t.p1["DischargeLink"].sum())
         self.electricity_net_cost = self.electricity_cost + self.operation_cost
+
 
 if __name__ == '__main__':
     import random
