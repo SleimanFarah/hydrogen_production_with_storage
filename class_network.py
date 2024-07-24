@@ -7,23 +7,13 @@ from function_positive_only_float import *
 
 class HydrogenProductionSystem:
 
-    def __init__(self, time_left, delivery_period, H2MassRemaining, battery_left, battery_on, alpha,
-                operative_PF_wind, operative_PF_solar, operative_price, operative_CO2Intensity):
+    def __init__(self, battery_on):
 
         # The delivery period is in hours
         # The times series are supposed to be dimensioned correctly
 
         import pypsa
         import convert_functions
-        self.time_left = time_left
-        self.delivery_period = delivery_period
-        self.H2MassRemaining = H2MassRemaining
-        self.battery_left = battery_left
-
-        self.operative_PF_wind = operative_PF_wind
-        self.operative_PF_solar = operative_PF_solar
-        self.operative_price = operative_price
-        self.operative_CO2Intensity = operative_CO2Intensity
 
         self.battery_on = battery_on
 
@@ -80,7 +70,6 @@ class HydrogenProductionSystem:
 
         # Optimization parameters initialization
 
-        self.alpha = alpha
         self.CO2_price = 0.075  # price of emitting 1 kg of C02
         self.LHV = 33.3    # kWh/kg
 
@@ -95,6 +84,28 @@ class HydrogenProductionSystem:
         self.n = n
 
         # initializing global data lists
+
+
+        # pypsatopo.generate(n, file_output="mynetworkfinal.cvs")
+        # n.plot(
+        #     line_colors="r",
+        #     title="network",
+        # )
+
+    def input(self, time_left, delivery_period, H2MassRemaining, battery_left, alpha, operative_PF_wind, operative_PF_solar, operative_price, operative_CO2Intensity):
+
+        self.time_left = time_left
+        self.delivery_period = delivery_period
+        self.H2MassRemaining = H2MassRemaining
+        self.battery_left = battery_left
+
+        self.alpha = alpha
+
+        self.operative_PF_wind = operative_PF_wind
+        self.operative_PF_solar = operative_PF_solar
+        self.operative_price = operative_price
+        self.operative_CO2Intensity = operative_CO2Intensity
+
         self.ltp_pf_series = []
         self.ltp_H2_series = []
         self.ltp_H2_target = []
@@ -124,12 +135,6 @@ class HydrogenProductionSystem:
         self.benchmark_pf_series = []
         self.benchmark_H2_prod = []
         self.benchmark_daily_H2_prod = []
-
-        # pypsatopo.generate(n, file_output="mynetworkfinal.cvs")
-        # n.plot(
-        #     line_colors="r",
-        #     title="network",
-        # )
 
 
 

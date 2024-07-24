@@ -169,9 +169,7 @@ def run_system_simulation(year, alpha, time_period):
     total_opportunity_cost = opportunity_cost_nb_0
     # total_electricity_net_cost = (Annualized_cost(0, 50, 1000000, 10000)/8760)*delivery_period*simulation_period
 
-    # Benchmark optimization initialization
-
-
+    hydrogen_plant = HydrogenProductionSystem(battery_on)
 
 
     # Loop for the whole delivery period
@@ -184,7 +182,7 @@ def run_system_simulation(year, alpha, time_period):
             operative_price = price[10+i*24*2+j*delivery_period:delivery_period+34+i*24+j*delivery_period]
             operative_CO2int = CO2int[10+i*24*2+j*delivery_period:delivery_period+34+i*24+j*delivery_period]
 
-            hydrogen_plant = HydrogenProductionSystem(time_left, delivery_period, H2_mass_remaining, initial_battery, battery_on, alpha, operative_PF_wind, operative_PF_solar, operative_price, operative_CO2int)
+            hydrogen_plant.input(time_left, delivery_period, H2_mass_remaining, initial_battery, alpha, operative_PF_wind, operative_PF_solar, operative_price, operative_CO2int)
 
             hydrogen_plant.lt_planner()
             hydrogen_plant.daily_planner()
