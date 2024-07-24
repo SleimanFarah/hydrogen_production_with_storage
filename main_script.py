@@ -6,6 +6,7 @@ from csv_file_function import *
 from function_AC import *
 import pandas as pd
 import os, sys
+import time
 
 
 def run_system_simulation(year, alpha, time_period):
@@ -304,10 +305,16 @@ def run_system_simulation(year, alpha, time_period):
 
 if __name__ == "__main__":
 
+    start_time = time.time()
     year = 2020
-    alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
     delivery_period = "day"
+    # alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
+    alphas = [0.5]
 
     for alpha in alphas:
         run_system_simulation(year, alpha, delivery_period)
+
+    end_time = time.time()
+    print(f"Execution time {end_time - start_time} seconds")
+
 
