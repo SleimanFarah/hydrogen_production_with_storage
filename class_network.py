@@ -1,9 +1,12 @@
+import pandas as pd
+
 import convert_functions
 import numpy as np
 # import pypsatopo
 from function_positive_only import *
 from function_positive_only_float import *
-
+import pypsa
+import xarray as xr
 
 class HydrogenProductionSystem:
 
@@ -11,9 +14,6 @@ class HydrogenProductionSystem:
 
         # The delivery period is in hours
         # The times series are supposed to be dimensioned correctly
-
-        import pypsa
-        import convert_functions
 
         self.battery_on = battery_on
 
@@ -106,17 +106,17 @@ class HydrogenProductionSystem:
         self.operative_price = operative_price
         self.operative_CO2Intensity = operative_CO2Intensity
 
-        self.ltp_pf_series = []
-        self.ltp_H2_series = []
-        self.ltp_H2_target = []
-        self.dp_pf_series = []
-        self.dp_Hydro_plan = []
-        self.dr_pf_series = []
-        self.dr_H2_prod = []
-        self.dr_h2h_CO2 = []
+        self.ltp_pf_series = pd.DataFrame()
+        self.ltp_H2_series = pd.DataFrame()
+        self.ltp_H2_target = pd.DataFrame()
+        self.dp_pf_series = pd.DataFrame()
+        self.dp_Hydro_plan = pd.DataFrame()
+        self.dr_pf_series = pd.DataFrame()
+        self.dr_H2_prod = pd.DataFrame()
+        self.dr_h2h_CO2 = pd.DataFrame()
 
         self.ltp_target_mass = 0
-        self.dp_hydro_hourly_schedule = []
+        # self.dp_hydro_hourly_schedule = pd.DataFrame()
         self.dp_battery_hourly_schedule = 0
         self.total_production = 0
         self.operation_cost = 0
@@ -132,9 +132,9 @@ class HydrogenProductionSystem:
         self.benchmark_electricity_revenue = 0
         self.benchmark_electricity_balance = 0
         self.benchmark_d2d_CO2 = 0
-        self.benchmark_pf_series = []
-        self.benchmark_H2_prod = []
-        self.benchmark_daily_H2_prod = []
+        self.benchmark_pf_series = pd.DataFrame()
+        self.benchmark_H2_prod = pd.DataFrame()
+        self.benchmark_daily_H2_prod = pd.DataFrame()
 
 
 
@@ -281,11 +281,29 @@ class HydrogenProductionSystem:
         #         expr = expr + m.variables["Generator-p"].loc[i, "NetworkImport"] * self.alpha * dp_CO2Intensity[i]*self.CO2_price + (1 - self.alpha) * ((dp_price[i]) * (m.variables["Generator-p"].loc[i, "NetworkImport"]-m.variables["Generator-p"].loc[i, "NetworkExport"]) + (self.operation_cost_wind*m.variables["Generator-p"].loc[i, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[i, "Solar"]))
         #     m.add_objective(expr, overwrite=True, sense="min")
 
+        f1 = xr.DataArray(self.alpha * self.CO2_price * dp_CO2Intensity, dims="snapshot")
+        dp_price = xr.DataArray(dp_price, dims="snapshot")
         if self.battery_on:
-            expr = (m.variables["Generator-p"].loc[range(34), "NetworkImport"] * self.alpha * dp_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * ((dp_price) * (m.variables["Generator-p"].loc[range(34), "NetworkImport"] -m.variables["Generator-p"].loc[range(34), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(34), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(34), "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[range(34), "ChargeLink"] +m.variables["Link-p"].loc[range(34), "DischargeLink"]))).sum()
+            # expr = (m.variables["Generator-p"].loc[range(34), "NetworkImport"] * f1).sum() + (1 - self.alpha) * (dp_price * (m.variables["Generator-p"].loc[range(34), "NetworkImport"] - m.variables["Generator-p"].loc[range(34), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(34), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(34), "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[range(34), "ChargeLink"] +m.variables["Link-p"].loc[range(34), "DischargeLink"]))).sum()
+            expr = (m.variables["Generator-p"].loc[range(34), "NetworkImport"] * f1 + (1 - self.alpha) * (
+                        dp_price * (
+                            m.variables["Generator-p"].loc[range(34), "NetworkImport"] - m.variables["Generator-p"].loc[
+                        range(34), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[
+                    range(34), "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[
+                                                            range(34), "Solar"] + self.operation_cost_battery * (
+                                                                    m.variables["Link-p"].loc[range(34), "ChargeLink"] +
+                                                                    m.variables["Link-p"].loc[
+                                                                        range(34), "DischargeLink"])))).sum()
             m.add_objective(expr, overwrite=True, sense="min")
         else:
-            expr = (m.variables["Generator-p"].loc[range(34), "NetworkImport"] * self.alpha * dp_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * ((dp_price) * (m.variables["Generator-p"].loc[range(34), "NetworkImport"] -m.variables["Generator-p"].loc[range(34), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(34), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(34), "Solar"])).sum()
+            # expr = (m.variables["Generator-p"].loc[range(34), "NetworkImport"] * self.alpha * dp_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * ((dp_price) * (m.variables["Generator-p"].loc[range(34), "NetworkImport"] -m.variables["Generator-p"].loc[range(34), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(34), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(34), "Solar"])).sum()
+            expr = (m.variables["Generator-p"].loc[
+                        range(34), "NetworkImport"] * self.alpha * dp_CO2Intensity * self.CO2_price + (
+                               1 - self.alpha) * (dp_price * (
+                        m.variables["Generator-p"].loc[range(34), "NetworkImport"] - m.variables["Generator-p"].loc[
+                    range(34), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[
+                range(34), "Wind"] + self.operation_cost_solar * m.variables["Generator-p"].loc[
+                                                        range(34), "Solar"]))).sum()
             m.add_objective(expr, overwrite=True, sense="min")
 
         # expr = m.variables["Generator-p"].loc[0, "Network"].where(m.variables["Generator-p"].loc[0, "Network"] >= 0) * self.alpha * dp_CO2Intensity[0]*self.CO2_price + (1 - self.alpha) * (pof(dp_price[0]) * (m.variables["Generator-p"].loc[0, "Network"]) + self.operation_cost_wind*m.variables["Generator-p"].loc[0, "Wind"] + self.operation_cost_solar*m.variables["Generator-p"].loc[0, "Solar"] + self.operation_cost_battery*(m.variables["Link-p"].loc[0, "ChargeLink"]+m.variables["Link-p"].loc[0, "DischargeLink"]))
@@ -305,12 +323,14 @@ class HydrogenProductionSystem:
 
         n.optimize.solve_model(solver_name="gurobi")
 
-        self.dp_hydro_hourly_schedule = n.stores_t.p["H2gen"][0:24]
+        # self.dp_hydro_hourly_schedule = n.stores_t.p["H2gen"][0:24]
+        self.dp_hydro_hourly_schedule = n.stores_t.p[["H2gen"]][0:24]
         # self.dp_battery_hourly_schedule = n.stores_t.p["Battery"][0:24]
 
-        self.dp_pf_series = self.dp_pf_series + [[n.generators_t.p, n.stores_t.p]]
+        # self.dp_pf_series = self.dp_pf_series + [[n.generators_t.p, n.stores_t.p]]
+        self.dp_pf_series = pd.concat([self.dp_pf_series, n.generators_t.p, n.stores_t.p], axis=1)
 
-        self.dp_Hydro_plan = self.dp_Hydro_plan +[self.dp_hydro_hourly_schedule]
+        self.dp_Hydro_plan = pd.concat([self.dp_Hydro_plan, self.dp_hydro_hourly_schedule])
 
     # Time series must be 24h long
     def realisation(self):
@@ -353,9 +373,17 @@ class HydrogenProductionSystem:
         # cstr = hydrolyzer_energy == H2_required_energy
         # m.add_constraints(cstr, name="target match {}".format(i))
 
-        total_hydrolyzer_energy = m.variables["Store-p"].loc[0, "H2gen"]
-        for i in range(1, 24):
-            total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Store-p"].loc[i, "H2gen"]
+        # **********************************************
+        # **********************************************
+        # total_hydrolyzer_energy = m.variables["Store-p"].loc[0, "H2gen"]
+        # for i in range(1, 24):
+        #     total_hydrolyzer_energy = total_hydrolyzer_energy + m.variables["Store-p"].loc[i, "H2gen"]
+        # **********************************************
+        total_hydrolyzer_energy = m.variables["Store-p"].loc[:, "H2gen"].sum()
+        # **********************************************
+        # **********************************************
+
+
         total_H2_required_energy = -convert_functions.H2_to_P(self.ltp_target_mass, self.LHV)
         # total_H2_required_energy = convert_functions.H2_to_P(-10, self.LHV)
         cstr = total_hydrolyzer_energy == total_H2_required_energy
@@ -381,7 +409,9 @@ class HydrogenProductionSystem:
         #     m.add_objective(expr, overwrite=True, sense="min")
 
         if self.battery_on:
-            expr = (m.variables["Generator-p"].loc[range(24), "NetworkImport"] * self.alpha * dr_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * ((dr_price) * (m.variables["Generator-p"].loc[range(24), "NetworkImport"] -m.variables["Generator-p"].loc[range(24), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(24), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(24), "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[range(24), "ChargeLink"] +m.variables["Link-p"].loc[range(24), "DischargeLink"]))).sum()
+            f1 = xr.DataArray(self.alpha * self.CO2_price * dr_CO2Intensity, dims="snapshot")
+            dr_price = xr.DataArray(dr_price, dims="snapshot")
+            expr = (m.variables["Generator-p"].loc[range(24), "NetworkImport"] * f1).sum() + (1 - self.alpha) * (dr_price * (m.variables["Generator-p"].loc[range(24), "NetworkImport"] -m.variables["Generator-p"].loc[range(24), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(24), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(24), "Solar"] + self.operation_cost_battery * (m.variables["Link-p"].loc[range(24), "ChargeLink"] +m.variables["Link-p"].loc[range(24), "DischargeLink"]))).sum()
             m.add_objective(expr, overwrite=True, sense="min")
         else:
             expr = (m.variables["Generator-p"].loc[range(24), "NetworkImport"] * self.alpha * dr_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * ((dr_price) * (m.variables["Generator-p"].loc[range(24), "NetworkImport"] -m.variables["Generator-p"].loc[range(24), "NetworkExport"]) + (self.operation_cost_wind * m.variables["Generator-p"].loc[range(24), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(24), "Solar"])).sum()
@@ -399,9 +429,10 @@ class HydrogenProductionSystem:
         if self.battery_on:
             self.battery_left = n.stores_t.e["Battery"][23]
 
-        self.dr_pf_series = self.dr_pf_series + [[n.generators_t.p, n.stores_t.p]]
+        # self.dr_pf_series = self.dr_pf_series + [[n.generators_t.p, n.stores_t.p]]
+        self.dr_pf_series = pd.concat([self.dr_pf_series, n.generators_t.p, n.stores_t.p], axis=1)
 
-        self.dr_H2_prod = self.dr_H2_prod + [-convert_functions.P_to_H2(n.stores_t.p["H2gen"], self.LHV)]
+        self.dr_H2_prod = self.dr_H2_prod + [-convert_functions.P_to_H2(n.stores_t.p[["H2gen"]], self.LHV)]
 
         # print(n.loads_t.p.sum())
         self.total_production = -convert_functions.P_to_H2(n.stores_t.p["H2gen"].sum(), self.LHV)
@@ -581,6 +612,7 @@ class HydrogenProductionSystem:
                                   "Solar"].sum() + self.operation_cost_battery * (
                                           n.links_t.p0["ChargeLink"].sum() + n.links_t.p1["DischargeLink"].sum())
         self.electricity_net_cost = self.electricity_cost + self.operation_cost
+
 
 if __name__ == '__main__':
     import random

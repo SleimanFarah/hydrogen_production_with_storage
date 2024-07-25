@@ -6,6 +6,7 @@ from csv_file_function import *
 from function_AC import *
 import pandas as pd
 import os, sys
+import time
 
 
 def run_system_simulation(year, alpha, time_period):
@@ -135,26 +136,24 @@ def run_system_simulation(year, alpha, time_period):
     # capital_cost = 0
 
 
-    PF_wind = (PF_wind_2017+PF_wind_2018+PF_wind_2019+PF_wind_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:]
-    PF_solar = (PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:]
-    price = (price_2017+price_2018+price_2019+price_2020+price_2021+price_2022)[initial_hour+8760*(year-2017)-delivery_period:]
-    CO2int = (CO2int_2017+CO2int_2018+CO2int_2019+CO2int_2020+CO2int_2021+CO2int_2022)[initial_hour+8760*(year-2017)-delivery_period:]
+    PF_wind = np.array((PF_wind_2017+PF_wind_2018+PF_wind_2019+PF_wind_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:])
+    PF_solar = np.array((PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:])
+    price = np.array((price_2017+price_2018+price_2019+price_2020+price_2021+price_2022)[initial_hour+8760*(year-2017)-delivery_period:])
+    CO2int = np.array((CO2int_2017+CO2int_2018+CO2int_2019+CO2int_2020+CO2int_2021+CO2int_2022)[initial_hour+8760*(year-2017)-delivery_period:])
 
-    ltp_pf_series = []
-    ltp_H2_series = []
-    ltp_H2_target = []
-    dp_pf_series = []
-    dp_Hydro_plan = []
-    dr_pf_series = []
-    dr_H2_prod = []
-    CO2_h2h = []
-    solar_pf_series = []
-    wind_pf_series = []
-    fromgrid_pf_series = []
-    togrid_pf_series = []
-    H2_pf_series = []
-
-
+    ltp_pf_series = pd.DataFrame()
+    ltp_H2_series = pd.DataFrame()
+    ltp_H2_target = pd.DataFrame()
+    dp_pf_series = pd.DataFrame()
+    dp_Hydro_plan = pd.DataFrame()
+    dr_pf_series = pd.DataFrame()
+    dr_H2_prod = pd.DataFrame()
+    CO2_h2h = pd.DataFrame()
+    solar_pf_series = pd.DataFrame()
+    wind_pf_series = pd.DataFrame()
+    fromgrid_pf_series = pd.DataFrame()
+    togrid_pf_series = pd.DataFrame()
+    H2_pf_series = pd.DataFrame()
 
 
     i = 0
@@ -176,10 +175,13 @@ def run_system_simulation(year, alpha, time_period):
     while j < simulation_period:
         while i < number_of_days:
             print(j+1, i+1)
-            operative_PF_wind = PF_wind[10+i*24*2+j*delivery_period:delivery_period+34+i*24+j*delivery_period]
-            operative_PF_solar = PF_solar[10+i*24*2+j*delivery_period:delivery_period+34+i*24+j*delivery_period]
-            operative_price = price[10+i*24*2+j*delivery_period:delivery_period+34+i*24+j*delivery_period]
-            operative_CO2int = CO2int[10+i*24*2+j*delivery_period:delivery_period+34+i*24+j*delivery_period]
+            s_idx = 10+i*24*2+j*delivery_period
+            e_idx = delivery_period+34+i*24+j*delivery_period
+
+            operative_PF_wind = PF_wind[s_idx:e_idx]
+            operative_PF_solar = PF_solar[s_idx:e_idx]
+            operative_price = price[s_idx:e_idx]
+            operative_CO2int = CO2int[s_idx:e_idx]
 
             hydrogen_plant.input(time_left, delivery_period, H2_mass_remaining, initial_battery, alpha, operative_PF_wind, operative_PF_solar, operative_price, operative_CO2int)
 
@@ -188,13 +190,13 @@ def run_system_simulation(year, alpha, time_period):
             hydrogen_plant.realisation()
             # hydrogen_plant.realisation_opp()
 
-            ltp_pf_series = ltp_pf_series + hydrogen_plant.ltp_pf_series
-            ltp_H2_series = ltp_H2_series + hydrogen_plant.ltp_H2_series
-            ltp_H2_target = ltp_H2_target + hydrogen_plant.ltp_H2_target
-            dp_pf_series = dp_pf_series + hydrogen_plant.dp_pf_series
-            dp_Hydro_plan = dp_Hydro_plan + hydrogen_plant.dp_Hydro_plan
-            dr_pf_series = dr_pf_series + hydrogen_plant.dr_pf_series
-            dr_H2_prod = dr_H2_prod + hydrogen_plant.dr_H2_prod
+            ltp_pf_series = pd.concat([ltp_pf_series, hydrogen_plant.ltp_pf_series])
+            ltp_H2_series = pd.concat([ltp_H2_series, hydrogen_plant.ltp_H2_series])
+            ltp_H2_target = pd.concat([ltp_H2_target, hydrogen_plant.ltp_H2_target])
+            dp_pf_series = pd.concat([dp_pf_series, hydrogen_plant.dp_pf_series])
+            dp_Hydro_plan = pd.concat([dp_Hydro_plan, hydrogen_plant.dp_Hydro_plan])
+            dr_pf_series = pd.concat([dr_pf_series, hydrogen_plant.dr_pf_series])
+            dr_H2_prod = pd.concat([dr_H2_prod, hydrogen_plant.dr_H2_prod])
 
             total_emissions = total_emissions + hydrogen_plant.CO2_emissions
             total_electricity_buying_cost = total_electricity_buying_cost + hydrogen_plant.electricity_cost
@@ -302,9 +304,16 @@ def run_system_simulation(year, alpha, time_period):
 
 if __name__ == "__main__":
 
+    start_time = time.time()
+    year = 2019
+    delivery_period = "day"
     # alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
-    alphas = [0.0001]
+    alphas = [0.5]
 
     for alpha in alphas:
-        run_system_simulation(2019, alpha, "day")
+        run_system_simulation(year, alpha, delivery_period)
+
+    end_time = time.time()
+    print(f"Execution time {end_time - start_time} seconds")
+
 
