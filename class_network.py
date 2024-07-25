@@ -432,15 +432,15 @@ class HydrogenProductionSystem:
         # self.dr_pf_series = self.dr_pf_series + [[n.generators_t.p, n.stores_t.p]]
         self.dr_pf_series = pd.concat([self.dr_pf_series, n.generators_t.p, n.stores_t.p], axis=1)
 
-        self.dr_H2_prod = self.dr_H2_prod + [-convert_functions.P_to_H2(n.stores_t.p[["H2gen"]], self.LHV)]
+        self.dr_H2_prod = pd.concat([self.dr_H2_prod, -convert_functions.P_to_H2(n.stores_t.p[["H2gen"]], self.LHV)], axis=1)
 
         # print(n.loads_t.p.sum())
         self.total_production = -convert_functions.P_to_H2(n.stores_t.p["H2gen"].sum(), self.LHV)
 
-        self.CO2_emissions = np.multiply(n.generators_t.p["NetworkImport"], dr_CO2Intensity).sum()
-        self.CO2_emissions_hourly = np.multiply(n.generators_t.p["NetworkImport"], dr_CO2Intensity)
-        self.dr_h2h_CO2 = self.dr_h2h_CO2 + [self.CO2_emissions_hourly]
-        self.electricity_cost = np.multiply((n.generators_t.p["NetworkImport"]-n.generators_t.p["NetworkExport"]), dr_price).sum()
+        self.CO2_emissions =(n.generators_t.p["NetworkImport"]*dr_CO2Intensity).sum()
+        self.CO2_emissions_hourly = n.generators_t.p[["NetworkImport"]]*dr_CO2Intensity.reshape(24,1)
+        self.dr_h2h_CO2 = pd.concat([self.dr_h2h_CO2, self.CO2_emissions_hourly], axis=1)
+        self.electricity_cost = ((n.generators_t.p["NetworkImport"]-n.generators_t.p["NetworkExport"])*dr_price).sum()
         if self.battery_on:
             self.operation_cost = self.operation_cost_wind*n.generators_t.p["Wind"].sum() + self.operation_cost_solar*n.generators_t.p["Solar"].sum() + self.operation_cost_battery*(n.links_t.p0["ChargeLink"].sum()+n.links_t.p1["DischargeLink"].sum())
         else:

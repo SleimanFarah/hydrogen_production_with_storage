@@ -219,11 +219,11 @@ def run_system_simulation(year, alpha, time_period):
             # total_H2_min_cost = (total_H2_min_cost + net_cost + opportunity_cost)
             total_H2_min_cost = (total_H2_min_cost + net_cost)
 
-            solar_pf_series = solar_pf_series + list(dr_pf_series[i+j*number_of_days][0]["Solar"])
-            wind_pf_series = wind_pf_series + list(dr_pf_series[i+j*number_of_days][0]["Wind"])
-            fromgrid_pf_series = fromgrid_pf_series + list(dr_pf_series[i+j*number_of_days][0]["NetworkImport"])
-            togrid_pf_series = togrid_pf_series + list(dr_pf_series[i+j*number_of_days][0]["NetworkExport"])
-            H2_pf_series = H2_pf_series + list(dr_pf_series[i+j*number_of_days][1]["H2gen"])
+            solar_pf_series = pd.concat([solar_pf_series,hydrogen_plant.dr_pf_series[["Solar"]]])
+            wind_pf_series = pd.concat([wind_pf_series,hydrogen_plant.dr_pf_series[["Wind"]]])
+            fromgrid_pf_series = pd.concat([fromgrid_pf_series,hydrogen_plant.dr_pf_series[["NetworkImport"]]])
+            togrid_pf_series = pd.concat([togrid_pf_series,hydrogen_plant.dr_pf_series[["NetworkExport"]]])
+            H2_pf_series = pd.concat([H2_pf_series,hydrogen_plant.dr_pf_series[["H2gen"]]])
 
             i = i + 1
             time_left = delivery_period - i*24
@@ -273,25 +273,25 @@ def run_system_simulation(year, alpha, time_period):
 
     snapshots = ["Time (h)"] + list(range(delivery_period * simulation_period))
 
-    solar_pf = ["Solar power (kW)"] + solar_pf_series
+    solar_pf = ["Solar power (kW)"] + list(solar_pf_series["Solar"])
 
-    wind_pf = ["Wind power (kW)"] + wind_pf_series
+    wind_pf = ["Wind power (kW)"] + list(wind_pf_series["Wind"])
 
-    powerfromgrid_pf = ["Power from grid (kW)"] + fromgrid_pf_series
+    powerfromgrid_pf = ["Power from grid (kW)"] + list(fromgrid_pf_series["NetworkImport"])
 
-    power2grid_pf = ["Power to grid (kW)"] + togrid_pf_series
+    power2grid_pf = ["Power to grid (kW)"] + list(togrid_pf_series["NetworkExport"])
 
-    power2hydrogen = ["Power to hydrogen (kW)"] + H2_pf_series
+    power2hydrogen = ["Power to hydrogen (kW)"] + list(H2_pf_series["H2gen"])
 
     curtailed_solar = ["Curtailed solar power (kW)"] + (
-                np.multiply(PF_solar[delivery_period:delivery_period*(simulation_period+1)], 1000) - np.array(solar_pf_series)).tolist()
+                np.multiply(PF_solar[delivery_period:delivery_period*(simulation_period+1)], 1000) - np.array(solar_pf_series["Solar"])).tolist()
 
     curtailed_wind = ["Curtailed wind power (kW)"] + (
-                np.multiply(PF_wind[delivery_period:delivery_period*(simulation_period+1)], 1000) - np.array(wind_pf_series)).tolist()
+                np.multiply(PF_wind[delivery_period:delivery_period*(simulation_period+1)], 1000) - np.array(wind_pf_series["Wind"])).tolist()
 
     # CO2_prod = ["CO2 emitted (kg)"]+list(hydrogen_plant.benchmark_h2h_CO2.T)
-    CO2int = ["CO2 intensity"] + CO2int[delivery_period:]
-    price = ["Electricity price"] + price[delivery_period:]
+    CO2int = ["CO2 intensity"] + CO2int[delivery_period:].tolist()
+    price = ["Electricity price"] + price[delivery_period:].tolist()
 
     array = [snapshots, solar_pf, wind_pf, powerfromgrid_pf, power2grid_pf, power2hydrogen, curtailed_solar, curtailed_wind,
              CO2int, price, ["Minimum price", total_H2_min_cost/total_production], ["H2 CO2 intensity", total_emissions/total_production]]
