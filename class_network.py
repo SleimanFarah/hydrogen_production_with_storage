@@ -545,73 +545,73 @@ class HydrogenProductionSystem:
         # for i in range(total_time):
         #     if n.generators_t.p["Network"][i] >= 0:
         #         self.benchmark_CO2_emissions = self.benchmark_CO2_emissions + n.generators_t.p["Network"][i]*benchmark_CO2int[i]
-    def realisation_opp(self):
-
-        n = self.n
-        delivery_period = self.delivery_period
-        time_left = self.time_left
-        n.set_snapshots(range(24))
-        # n.stores.e_nom_extendable["H2gen"] = False
-        # n.stores.e_initial["Battery"] = self.battery_left
-        n.stores.e_nom_extendable["H2gen"] = False
-        n.loads.p_set["H2gen"] = 0
-        n.stores.e_initial["Battery"] = self.battery_left
-        time_left = self.time_left
-
-        dr_PF_wind = self.operative_PF_wind[time_left - 10:time_left + 14]
-        dr_PF_solar = self.operative_PF_solar[time_left - 10:time_left + 14]
-        dr_price = self.operative_price[time_left - 10:time_left + 14]
-        dr_CO2Intensity = self.operative_CO2Intensity[time_left - 10:time_left + 14]
-
-        # n.stores_t.p_set["H2gen"] = self.dp_hydro_hourly_schedule
-        # n.stores_t.p_set["Battery"] = self.dp_battery_hourly_schedule
-
-        n.generators_t.p_max_pu["Solar"] = dr_PF_solar
-        n.generators_t.p_max_pu["Wind"] = dr_PF_wind
-        # n.generators_t.p_min_pu["Solar"] = dr_PF_solar
-        # n.generators_t.p_min_pu["Wind"] = dr_PF_wind
-
-        m = n.optimize.create_model()
-
-        initial_energy = m.variables["Store-e"].loc[0, "Battery"]
-        final_energy = m.variables["Store-e"].loc[23, "Battery"]
-        cstr = initial_energy == final_energy
-        m.add_constraints(cstr, name="battery sustainability")
-
-        # for i in range(0, 24):
-        #     cstr = m.variables["Link-p"].loc[i, "H2Link"] <= self.hydrolyzer_capacity
-        #     m.add_constraints(cstr, name="limited capacity at time {}".format(i))
-
-        expr = -m.variables["Generator-p"].loc[0, "Network"]
-        for i in range(1, 24):
-            expr = expr - m.variables["Generator-p"].loc[i, "Network"]
-
-        # total_energy = m.variables["Link-p"].loc[0, "BuyLink"]
-        # for i in range(1, 23):
-        #     total_energy = total_energy + m.variables["Link-p"].loc[i, "BuyLink"]
-        # expr = total_energy * (self.alpha * dr_CO2Intensity + (1 - self.alpha) * dr_price)
-        m.add_objective(expr, overwrite=True, sense="max")
-
-        self.n.optimize.solve_model(solver_name="gurobi")
-
-        self.battery_left = n.stores_t.e["Battery"][23]
-
-        self.dr_pf_series = self.dr_pf_series + [
-            [n.generators_t.p, n.loads_t.p, n.stores_t.p, n.buses_t.p, n.links_t.p0]]
-
-        self.dr_H2_prod = self.dr_H2_prod + [-convert_functions.P_to_H2(n.stores_t.p["H2gen"], self.LHV)]
-
-        # print(n.loads_t.p.sum())
-        self.total_production = -convert_functions.P_to_H2(n.stores_t.p["H2gen"].sum(), self.LHV)
-
-        self.CO2_emissions = np.multiply(po(n.generators_t.p["Network"]), dr_CO2Intensity).sum()
-        self.dr_d2d_CO2 = self.dr_d2d_CO2 + [self.CO2_emissions]
-        self.electricity_cost = np.multiply(n.generators_t.p["Network"], dr_price).sum()
-        self.operation_cost = self.operation_cost_wind * n.generators_t.p[
-            "Wind"].sum() + self.operation_cost_solar * n.generators_t.p[
-                                  "Solar"].sum() + self.operation_cost_battery * (
-                                          n.links_t.p0["ChargeLink"].sum() + n.links_t.p1["DischargeLink"].sum())
-        self.electricity_net_cost = self.electricity_cost + self.operation_cost
+    # def realisation_opp(self):
+    #
+    #     n = self.n
+    #     delivery_period = self.delivery_period
+    #     time_left = self.time_left
+    #     n.set_snapshots(range(24))
+    #     # n.stores.e_nom_extendable["H2gen"] = False
+    #     # n.stores.e_initial["Battery"] = self.battery_left
+    #     n.stores.e_nom_extendable["H2gen"] = False
+    #     n.loads.p_set["H2gen"] = 0
+    #     n.stores.e_initial["Battery"] = self.battery_left
+    #     time_left = self.time_left
+    #
+    #     dr_PF_wind = self.operative_PF_wind[time_left - 10:time_left + 14]
+    #     dr_PF_solar = self.operative_PF_solar[time_left - 10:time_left + 14]
+    #     dr_price = self.operative_price[time_left - 10:time_left + 14]
+    #     dr_CO2Intensity = self.operative_CO2Intensity[time_left - 10:time_left + 14]
+    #
+    #     # n.stores_t.p_set["H2gen"] = self.dp_hydro_hourly_schedule
+    #     # n.stores_t.p_set["Battery"] = self.dp_battery_hourly_schedule
+    #
+    #     n.generators_t.p_max_pu["Solar"] = dr_PF_solar
+    #     n.generators_t.p_max_pu["Wind"] = dr_PF_wind
+    #     # n.generators_t.p_min_pu["Solar"] = dr_PF_solar
+    #     # n.generators_t.p_min_pu["Wind"] = dr_PF_wind
+    #
+    #     m = n.optimize.create_model()
+    #
+    #     initial_energy = m.variables["Store-e"].loc[0, "Battery"]
+    #     final_energy = m.variables["Store-e"].loc[23, "Battery"]
+    #     cstr = initial_energy == final_energy
+    #     m.add_constraints(cstr, name="battery sustainability")
+    #
+    #     # for i in range(0, 24):
+    #     #     cstr = m.variables["Link-p"].loc[i, "H2Link"] <= self.hydrolyzer_capacity
+    #     #     m.add_constraints(cstr, name="limited capacity at time {}".format(i))
+    #
+    #     expr = -m.variables["Generator-p"].loc[0, "Network"]
+    #     for i in range(1, 24):
+    #         expr = expr - m.variables["Generator-p"].loc[i, "Network"]
+    #
+    #     # total_energy = m.variables["Link-p"].loc[0, "BuyLink"]
+    #     # for i in range(1, 23):
+    #     #     total_energy = total_energy + m.variables["Link-p"].loc[i, "BuyLink"]
+    #     # expr = total_energy * (self.alpha * dr_CO2Intensity + (1 - self.alpha) * dr_price)
+    #     m.add_objective(expr, overwrite=True, sense="max")
+    #
+    #     self.n.optimize.solve_model(solver_name="gurobi")
+    #
+    #     self.battery_left = n.stores_t.e["Battery"][23]
+    #
+    #     self.dr_pf_series = self.dr_pf_series + [
+    #         [n.generators_t.p, n.loads_t.p, n.stores_t.p, n.buses_t.p, n.links_t.p0]]
+    #
+    #     self.dr_H2_prod = self.dr_H2_prod + [-convert_functions.P_to_H2(n.stores_t.p["H2gen"], self.LHV)]
+    #
+    #     # print(n.loads_t.p.sum())
+    #     self.total_production = -convert_functions.P_to_H2(n.stores_t.p["H2gen"].sum(), self.LHV)
+    #
+    #     self.CO2_emissions = np.multiply(po(n.generators_t.p["Network"]), dr_CO2Intensity).sum()
+    #     self.dr_d2d_CO2 = self.dr_d2d_CO2 + [self.CO2_emissions]
+    #     self.electricity_cost = np.multiply(n.generators_t.p["Network"], dr_price).sum()
+    #     self.operation_cost = self.operation_cost_wind * n.generators_t.p[
+    #         "Wind"].sum() + self.operation_cost_solar * n.generators_t.p[
+    #                               "Solar"].sum() + self.operation_cost_battery * (
+    #                                       n.links_t.p0["ChargeLink"].sum() + n.links_t.p1["DischargeLink"].sum())
+    #     self.electricity_net_cost = self.electricity_cost + self.operation_cost
 
 
 if __name__ == '__main__':
