@@ -106,7 +106,7 @@ def run_system_simulation(year, alpha, time_period):
     elif time_period == "year":
         number_of_days = 365
         simulation_period = 1
-    else:
+    elif time_period == "test":
         number_of_days = 1
         simulation_period = 1
 
@@ -296,17 +296,21 @@ def run_system_simulation(year, alpha, time_period):
     array = [snapshots, solar_pf, wind_pf, powerfromgrid_pf, power2grid_pf, power2hydrogen, curtailed_solar, curtailed_wind,
              CO2int, price, ["Minimum price", total_H2_min_cost/total_production], ["H2 CO2 intensity", total_emissions/total_production]]
     df = pd.DataFrame(array).T
-    if battery_on:
-        df.to_excel(excel_writer=f"d2d_{year}_battery_on_period_{number_of_days}d_alpha{alpha}.xlsx")
+
+    if time_period == "test":
+        df.to_excel(excel_writer=f"test.xlsx")
     else:
-        df.to_excel(excel_writer=f"d2d_{year}_battery_off_period{number_of_days}d_alpha{alpha}.xlsx")
+        if battery_on:
+            df.to_excel(excel_writer=f"d2d_{year}_battery_on_period_{number_of_days}d_alpha{alpha}.xlsx")
+        else:
+            df.to_excel(excel_writer=f"d2d_{year}_battery_off_period{number_of_days}d_alpha{alpha}.xlsx")
 
 
 if __name__ == "__main__":
 
     start_time = time.time()
     year = 2019
-    delivery_period = "day"
+    delivery_period = "test"
     # alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
     alphas = [0.5]
 

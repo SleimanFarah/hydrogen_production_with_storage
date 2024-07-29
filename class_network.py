@@ -142,26 +142,25 @@ class HydrogenProductionSystem:
         if self.time_left == 24:
             self.ltp_target_mass = self.H2MassRemaining
         else:
-            n = self.n
             time_left = self.time_left
             delivery_period = self.delivery_period
-            n.set_snapshots(range(time_left))
+            self.n.set_snapshots(range(time_left))
             # n.stores.e_nom_extendable["H2gen"] = True
             # n.loads.p_set["H2gen"] = 0
             if self.battery_on:
-                n.stores.e_initial["Battery"] = self.battery_left
+                self.n.stores.e_initial["Battery"] = self.battery_left
 
             ltp_PF_wind = self.operative_PF_wind[14:time_left+14]
             ltp_PF_solar = self.operative_PF_solar[14:time_left+14]
             ltp_price = self.operative_price[14:time_left+14]
             ltp_CO2Intensity = self.operative_CO2Intensity[14:time_left+14]
 
-            n.generators_t.p_max_pu["Solar"] = ltp_PF_solar
-            n.generators_t.p_max_pu["Wind"] = ltp_PF_wind
+            self.n.generators_t.p_max_pu["Solar"] = ltp_PF_solar
+            self.n.generators_t.p_max_pu["Wind"] = ltp_PF_wind
             # n.generators_t.p_min_pu["Solar"] = ltp_PF_solar
             # n.generators_t.p_min_pu["Wind"] = ltp_PF_wind
 
-            m = n.optimize.create_model()
+            m = self.n.optimize.create_model()
 
                 # total_hydrolyzer_energy = m.variables["Store-e"].loc[time_left+23, "H2gen"]
                 # total_H2_required_energy = convert_functions.H2_to_P(self.H2MassRemaining, self.LHV)
@@ -208,25 +207,24 @@ class HydrogenProductionSystem:
                 expr = (m.variables["Generator-p"].loc[range(time_left), "NetworkImport"] * self.alpha * ltp_CO2Intensity * self.CO2_price).sum() + (1 - self.alpha) * (ltp_price * (m.variables["Generator-p"].loc[range(time_left), "NetworkImport"] -m.variables["Generator-p"].loc[range(time_left), "NetworkExport"]) + (self.operation_cost_wind *m.variables["Generator-p"].loc[range(time_left), "Wind"] + self.operation_cost_solar *m.variables["Generator-p"].loc[range(time_left), "Solar"])).sum()
                 m.add_objective(expr, overwrite=True, sense="min")
 
-            n.optimize.solve_model(solver_name="gurobi")
+            self.n.optimize.solve_model(solver_name="gurobi")
 
-            self.ltp_target_mass = -convert_functions.P_to_H2((n.stores_t.p["H2gen"][time_left-34:time_left-10].sum()), self.LHV)
-            self.ltp_H2_target = self.ltp_H2_target + [self.ltp_target_mass]
+            self.ltp_target_mass = -convert_functions.P_to_H2((self.n.stores_t.p["H2gen"][time_left-34:time_left-10].sum()), self.LHV)
+            self.ltp_H2_target = pd.concat([self.ltp_H2_target, self.ltp_target_mass])
 
-            self.ltp_H2_series = self.ltp_H2_series + [convert_functions.P_to_H2(n.stores_t.p["H2gen"], self.LHV)]
+            self.ltp_H2_series = pd.concat([self.ltp_H2_series, convert_functions.P_to_H2(self.n.stores_t.p["H2gen"], self.LHV)])
 
-            self.ltp_pf_series = self.ltp_pf_series + [[n.generators_t.p, n.stores_t.p]]
+            self.ltp_pf_series = pd.concat([self.ltp_pf_series, self.n.generators_t.p, self.n.stores_t.p], axis=1)
 
     def daily_planner(self):
         # Time series must be 34h long
 
-        n = self.n
-        n.set_snapshots(range(34))
+        self.n.set_snapshots(range(34))
         # n.stores.e_nom_extendable["H2gen"] = True
         # n.loads.p_set["H2gen"] = 0
         time_left = self.time_left
         if self.battery_on:
-            n.stores.e_initial["Battery"] = self.battery_left
+            self.n.stores.e_initial["Battery"] = self.battery_left
 
 
         dp_PF_wind = self.operative_PF_wind[time_left-10:time_left+24]
@@ -234,13 +232,13 @@ class HydrogenProductionSystem:
         dp_price = self.operative_price[time_left-10:time_left+24]
         dp_CO2Intensity = self.operative_CO2Intensity[time_left-10:time_left+24]
 
-        n.generators_t.p_max_pu["Solar"] = dp_PF_solar
-        n.generators_t.p_max_pu["Wind"] = dp_PF_wind
+        self.n.generators_t.p_max_pu["Solar"] = dp_PF_solar
+        self.n.generators_t.p_max_pu["Wind"] = dp_PF_wind
         # n.generators_t.p_min_pu["Solar"] = dp_PF_solar
         # n.generators_t.p_min_pu["Wind"] = dp_PF_wind
 
 
-        m = n.optimize.create_model()
+        m = self.n.optimize.create_model()
 
         total_hydrolyzer_energy = -m.variables["Store-p"].loc[range(24), "H2gen"].sum()
         total_H2_required_energy = convert_functions.H2_to_P(self.ltp_target_mass, self.LHV)
@@ -321,30 +319,29 @@ class HydrogenProductionSystem:
 
         m.add_objective(expr, overwrite=True, sense="min")
 
-        n.optimize.solve_model(solver_name="gurobi")
+        self.n.optimize.solve_model(solver_name="gurobi")
 
         # self.dp_hydro_hourly_schedule = n.stores_t.p["H2gen"][0:24]
-        self.dp_hydro_hourly_schedule = n.stores_t.p[["H2gen"]][0:24]
+        self.dp_hydro_hourly_schedule = self.n.stores_t.p[["H2gen"]][0:24]
         # self.dp_battery_hourly_schedule = n.stores_t.p["Battery"][0:24]
 
         # self.dp_pf_series = self.dp_pf_series + [[n.generators_t.p, n.stores_t.p]]
-        self.dp_pf_series = pd.concat([self.dp_pf_series, n.generators_t.p, n.stores_t.p], axis=1)
+        self.dp_pf_series = pd.concat([self.dp_pf_series, self.n.generators_t.p, self.n.stores_t.p], axis=1)
 
         self.dp_Hydro_plan = pd.concat([self.dp_Hydro_plan, self.dp_hydro_hourly_schedule])
 
     # Time series must be 24h long
     def realisation(self):
 
-        n = self.n
         delivery_period = self.delivery_period
         time_left = self.time_left
-        n.set_snapshots(range(24))
+        self.n.set_snapshots(range(24))
         # n.stores.e_nom_extendable["H2gen"] = False
         # n.stores.e_initial["Battery"] = self.battery_left
         # n.stores.e_nom_extendable["H2gen"] = True
         # n.loads.p_set["H2gen"] = 0
         if self.battery_on:
-            n.stores.e_initial["Battery"] = self.battery_left
+            self.n.stores.e_initial["Battery"] = self.battery_left
         time_left = self.time_left
 
         dr_PF_wind = self.operative_PF_wind[time_left-10:time_left+14]
@@ -355,12 +352,12 @@ class HydrogenProductionSystem:
         # n.stores_t.p_set["H2gen"] = self.dp_hydro_hourly_schedule
         # n.stores_t.p_set["Battery"] = self.dp_battery_hourly_schedule
 
-        n.generators_t.p_max_pu["Solar"] = dr_PF_solar
-        n.generators_t.p_max_pu["Wind"] = dr_PF_wind
+        self.n.generators_t.p_max_pu["Solar"] = dr_PF_solar
+        self.n.generators_t.p_max_pu["Wind"] = dr_PF_wind
         # n.generators_t.p_min_pu["Solar"] = dr_PF_solar
         # n.generators_t.p_min_pu["Wind"] = dr_PF_wind
 
-        m = n.optimize.create_model()
+        m = self.n.optimize.create_model()
 
         if self.battery_on:
             initial_energy = m.variables["Store-e"].loc[0, "Battery"]
@@ -427,24 +424,24 @@ class HydrogenProductionSystem:
         self.n.optimize.solve_model(solver_name="gurobi")
 
         if self.battery_on:
-            self.battery_left = n.stores_t.e["Battery"][23]
+            self.battery_left = self.n.stores_t.e["Battery"][23]
 
         # self.dr_pf_series = self.dr_pf_series + [[n.generators_t.p, n.stores_t.p]]
-        self.dr_pf_series = pd.concat([self.dr_pf_series, n.generators_t.p, n.stores_t.p], axis=1)
+        self.dr_pf_series = pd.concat([self.dr_pf_series, self.n.generators_t.p, self.n.stores_t.p], axis=1)
 
-        self.dr_H2_prod = pd.concat([self.dr_H2_prod, -convert_functions.P_to_H2(n.stores_t.p[["H2gen"]], self.LHV)], axis=1)
+        self.dr_H2_prod = pd.concat([self.dr_H2_prod, -convert_functions.P_to_H2(self.n.stores_t.p[["H2gen"]], self.LHV)], axis=1)
 
         # print(n.loads_t.p.sum())
-        self.total_production = -convert_functions.P_to_H2(n.stores_t.p["H2gen"].sum(), self.LHV)
+        self.total_production = -convert_functions.P_to_H2(self.n.stores_t.p["H2gen"].sum(), self.LHV)
 
-        self.CO2_emissions =(n.generators_t.p["NetworkImport"]*dr_CO2Intensity).sum()
-        self.CO2_emissions_hourly = n.generators_t.p[["NetworkImport"]]*dr_CO2Intensity.reshape(24,1)
+        self.CO2_emissions =(self.n.generators_t.p["NetworkImport"]*dr_CO2Intensity).sum()
+        self.CO2_emissions_hourly = self.n.generators_t.p[["NetworkImport"]]*dr_CO2Intensity.reshape(24,1)
         self.dr_h2h_CO2 = pd.concat([self.dr_h2h_CO2, self.CO2_emissions_hourly], axis=1)
-        self.electricity_cost = ((n.generators_t.p["NetworkImport"]-n.generators_t.p["NetworkExport"])*dr_price).sum()
+        self.electricity_cost = ((self.n.generators_t.p["NetworkImport"]-self.n.generators_t.p["NetworkExport"])*dr_price).sum()
         if self.battery_on:
-            self.operation_cost = self.operation_cost_wind*n.generators_t.p["Wind"].sum() + self.operation_cost_solar*n.generators_t.p["Solar"].sum() + self.operation_cost_battery*(n.links_t.p0["ChargeLink"].sum()+n.links_t.p1["DischargeLink"].sum())
+            self.operation_cost = self.operation_cost_wind*self.n.generators_t.p["Wind"].sum() + self.operation_cost_solar*self.n.generators_t.p["Solar"].sum() + self.operation_cost_battery*(self.n.links_t.p0["ChargeLink"].sum()+self.n.links_t.p1["DischargeLink"].sum())
         else:
-            self.operation_cost = self.operation_cost_wind * n.generators_t.p["Wind"].sum() + self.operation_cost_solar * n.generators_t.p["Solar"].sum()
+            self.operation_cost = self.operation_cost_wind * self.n.generators_t.p["Wind"].sum() + self.operation_cost_solar * self.n.generators_t.p["Solar"].sum()
         self.electricity_net_cost = self.electricity_cost + self.operation_cost
 
     def benchmark(self, total_time, time_period, delivery_mass,
