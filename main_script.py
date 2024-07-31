@@ -113,7 +113,8 @@ def run_system_simulation(year, alpha, time_period):
 
     delivery_period = 24*number_of_days
     # delivery_mass = number_of_days*0.7*24*P_to_H2(1000, 33.3)
-    total_mass = (108000/8760)*delivery_period*simulation_period
+    # total_mass = (108000/8760)*delivery_period*simulation_period
+    total_mass = (135000 / 8760) * delivery_period * simulation_period
     # total_mass = 0
     delivery_mass = total_mass/simulation_period
     initial_battery = 0
