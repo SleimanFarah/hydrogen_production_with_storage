@@ -85,7 +85,7 @@ def run_system_simulation(year, alpha, time_period):
 
     # Initialization of variables
 
-    battery_on = False
+    battery_on = True
     # alpha = 0.0001
 
     # for alpha in alphas:
