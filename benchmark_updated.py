@@ -136,19 +136,7 @@ def run_system_simulation(year, alpha, time_period):
     # capital_cost = 0
 
 
-    PF_wind = np.array((PF_wind_2017+PF_wind_2018+PF_wind_2019+PF_wind_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:])
-    PF_solar = np.array((PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:])
-    price = np.array((price_2017+price_2018+price_2019+price_2020+price_2021+price_2022)[initial_hour+8760*(year-2017)-delivery_period:])
-    CO2int = np.array((CO2int_2017+CO2int_2018+CO2int_2019+CO2int_2020+CO2int_2021+CO2int_2022)[initial_hour+8760*(year-2017)-delivery_period:])
 
-    ltp_pf_series = pd.DataFrame()
-    ltp_H2_series = pd.DataFrame()
-    ltp_H2_target = pd.DataFrame()
-    dp_pf_series = pd.DataFrame()
-    dp_Hydro_plan = pd.DataFrame()
-    dr_pf_series = pd.DataFrame()
-    dr_H2_prod = pd.DataFrame()
-    CO2_h2h = pd.DataFrame()
     solar_pf_series = pd.DataFrame()
     wind_pf_series = pd.DataFrame()
     fromgrid_pf_series = pd.DataFrame()
@@ -156,10 +144,7 @@ def run_system_simulation(year, alpha, time_period):
     H2_pf_series = pd.DataFrame()
 
 
-    i = 0
-    j = 0
-    time_left = delivery_period
-    H2_mass_remaining = delivery_mass
+
     total_production = 0
     total_emissions = 0
     total_electricity_buying_cost = 0
@@ -175,17 +160,23 @@ def run_system_simulation(year, alpha, time_period):
     benchmark_pf_series = []
 
 
-    PF_wind = np.array((PF_wind_2017+PF_wind_2018+PF_wind_2019+PF_wind_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:])
-    PF_solar = np.array((PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:])
-    price = np.array((price_2017+price_2018+price_2019+price_2020+price_2021+price_2022)[initial_hour+8760*(year-2017)-delivery_period:])
-    CO2int = np.array((CO2int_2017+CO2int_2018+CO2int_2019+CO2int_2020+CO2int_2021+CO2int_2022)[initial_hour+8760*(year-2017)-delivery_period:])
+    PF_wind = np.array((PF_wind_2017+PF_wind_2018+PF_wind_2019+PF_wind_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017):initial_hour+8760*(year-2016)])
+    PF_solar = np.array((PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017):initial_hour+8760*(year-2016)])
+    price = np.array((price_2017+price_2018+price_2019+price_2020+price_2021+price_2022)[initial_hour+8760*(year-2017):initial_hour+8760*(year-2016)])
+    CO2int = np.array((CO2int_2017+CO2int_2018+CO2int_2019+CO2int_2020+CO2int_2021+CO2int_2022)[initial_hour+8760*(year-2017):initial_hour+8760*(year-2016)])
 
-    hydrogen_plant.benchmark(delivery_period*simulation_period, delivery_period, delivery_mass, PF_wind, PF_solar, price, CO2int)
-    net_cost = hydrogen_plant.benchmark_electricity_balance
-    production = hydrogen_plant.benchmark_total_production
-    emissions = hydrogen_plant.benchmark_CO2_emissions
+    hydrogen_plant.benchmark(delivery_period*simulation_period, delivery_period, delivery_mass, alpha, PF_wind, PF_solar, price, CO2int)
+    net_cost = hydrogen_plant.electricity_net_cost
+    total_production = hydrogen_plant.total_production
+    total_emissions = hydrogen_plant.CO2_emissions
     benchmark_H2_prod = hydrogen_plant.benchmark_H2_prod
     benchmark_pf_series = hydrogen_plant.benchmark_pf_series
+
+    solar_pf_series = hydrogen_plant.benchmark_pf_series[["Solar"]]
+    wind_pf_series = hydrogen_plant.benchmark_pf_series[["Wind"]]
+    fromgrid_pf_series = hydrogen_plant.benchmark_pf_series[["NetworkImport"]]
+    togrid_pf_series = hydrogen_plant.benchmark_pf_series[["NetworkExport"]]
+    H2_pf_series = hydrogen_plant.benchmark_pf_series[["H2gen"]]
 
 
     # hydrogen_plant = HydrogenProductionSystem(0,0,0,0,battery_on, alpha, PF_wind, PF_solar, price, CO2int)
@@ -206,11 +197,8 @@ def run_system_simulation(year, alpha, time_period):
     # print(ltp_H2_target)
     # # print(dp_Hydro_plan)
     # print(dp_pf_series)
-    print(dr_H2_prod)
-    print(dp_pf_series)
-    print(dr_pf_series)
     print(total_production)
-    print(delivery_mass*j)
+    print(delivery_mass*delivery_period)
     # print(dr_pf_series[0][1].sum())
     # print(total_electricity_buying_cost/total_production)
     # print(total_opportunity_cost/total_production)
@@ -239,10 +227,10 @@ def run_system_simulation(year, alpha, time_period):
     power2hydrogen = ["Power to hydrogen (kW)"] + list(H2_pf_series["H2gen"])
 
     curtailed_solar = ["Curtailed solar power (kW)"] + (
-                np.multiply(PF_solar[delivery_period:delivery_period*(simulation_period+1)], 1000) - np.array(solar_pf_series["Solar"])).tolist()
+                np.multiply(PF_solar[0:delivery_period*simulation_period], 1000) - np.array(solar_pf_series["Solar"])).tolist()
 
     curtailed_wind = ["Curtailed wind power (kW)"] + (
-                np.multiply(PF_wind[delivery_period:delivery_period*(simulation_period+1)], 1000) - np.array(wind_pf_series["Wind"])).tolist()
+                np.multiply(PF_wind[0:delivery_period*simulation_period], 1000) - np.array(wind_pf_series["Wind"])).tolist()
 
     # CO2_prod = ["CO2 emitted (kg)"]+list(hydrogen_plant.benchmark_h2h_CO2.T)
     CO2int = ["CO2 intensity"] + CO2int[delivery_period:].tolist()
@@ -265,7 +253,7 @@ if __name__ == "__main__":
 
     start_time = time.time()
     year = 2021
-    delivery_period = "year"
+    delivery_period = "day"
     # alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
     alphas = [0.999]
 
