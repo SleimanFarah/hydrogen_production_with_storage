@@ -8,28 +8,28 @@ from function_AC import *
 from matplotlib import pyplot as plt
 import pandas as pd
 
-with open('solar_capacity_factor 2018.csv', 'r') as PF_solar_data:
+with open('solar_capacity_factor_2018.csv', 'r') as PF_solar_data:
     PF_solar_2018 = csv_reader_function(PF_solar_data)
 
-with open('wind_capacity_factor 2018.csv', 'r') as PF_wind_data:
+with open('wind_capacity_factor_2018.csv', 'r') as PF_wind_data:
     PF_wind_2018 = csv_reader_function(PF_wind_data)
 
-with open('electricity_price 2018.csv', 'r') as price_data:
+with open('electricity_price_2018.csv', 'r') as price_data:
     price_2018 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-with open('co2_intensity 2018.csv', 'r') as CO2int_data:
+with open('co2_intensity_2018.csv', 'r') as CO2int_data:
     CO2int_2018 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
-with open('solar_capacity_factor 2019.csv', 'r') as PF_solar_data:
+with open('solar_capacity_factor_2019.csv', 'r') as PF_solar_data:
     PF_solar_2019 = csv_reader_function(PF_solar_data)
 
-with open('wind_capacity_factor 2019.csv', 'r') as PF_wind_data:
+with open('wind_capacity_factor_2019.csv', 'r') as PF_wind_data:
     PF_wind_2019 = csv_reader_function(PF_wind_data)
 
-with open('electricity_price 2019.csv', 'r') as price_data:
+with open('electricity_price_2019.csv', 'r') as price_data:
     price_2019 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-with open('co2_intensity 2019.csv', 'r') as CO2int_data:
+with open('co2_intensity_2019.csv', 'r') as CO2int_data:
     CO2int_2019 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
 # capital_cost_solar = Annualized_cost(0.07, 40, 310000, 9500)
