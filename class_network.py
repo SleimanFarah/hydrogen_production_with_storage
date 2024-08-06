@@ -233,8 +233,7 @@ class HydrogenProductionSystem:
         # n.loads.p_set["H2gen"] = 0
         time_left = self.time_left
         if self.battery_on:
-            self.n.stores.e_initial["Battery"] = self.battery_left
-
+            self.n.stores.loc["Battery", "e_initial"] = self.battery_left
 
         dp_PF_wind = self.operative_PF_wind[time_left-10:time_left+24]
         dp_PF_solar = self.operative_PF_solar[time_left-10:time_left+24]
@@ -336,7 +335,7 @@ class HydrogenProductionSystem:
         # n.stores.e_nom_extendable["H2gen"] = True
         # n.loads.p_set["H2gen"] = 0
         if self.battery_on:
-            self.n.stores.e_initial["Battery"] = self.battery_left
+            self.n.stores.loc["Battery", "e_initial"] = self.battery_left
         time_left = self.time_left
 
         dr_PF_wind = self.operative_PF_wind[time_left-10:time_left+14]

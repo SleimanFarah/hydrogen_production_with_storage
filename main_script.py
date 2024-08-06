@@ -1,6 +1,7 @@
 from class_network import *
 from convert_functions import *
 import random
+import matplotlib
 from matplotlib import pyplot as plt
 from csv_file_function import *
 from function_AC import *
@@ -311,7 +312,7 @@ if __name__ == "__main__":
 
     start_time = time.time()
     year = 2019
-    delivery_period = "week"
+    delivery_period = "day"
     # alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
     alphas = [0.5]
 
