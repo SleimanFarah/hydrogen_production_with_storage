@@ -85,7 +85,7 @@ def run_system_simulation(year, alpha, time_period):
 
     # Initialization of variables
 
-    battery_on = True
+    battery_on = False
     # alpha = 0.0001
 
     # for alpha in alphas:
@@ -137,7 +137,7 @@ def run_system_simulation(year, alpha, time_period):
 
 
     PF_wind = np.array((PF_wind_2017+PF_wind_2018+PF_wind_2019+PF_wind_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:])
-    PF_solar = np.array((PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017)-delivery_period:])
+    PF_solar = np.array((PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_solar_2021+PF_solar_2022)[initial_hour+8760*(year-2017)-delivery_period:])
     price = np.array((price_2017+price_2018+price_2019+price_2020+price_2021+price_2022)[initial_hour+8760*(year-2017)-delivery_period:])
     CO2int = np.array((CO2int_2017+CO2int_2018+CO2int_2019+CO2int_2020+CO2int_2021+CO2int_2022)[initial_hour+8760*(year-2017)-delivery_period:])
 
@@ -243,7 +243,7 @@ def run_system_simulation(year, alpha, time_period):
     else:
         capital_cost = capital_cost_electrolyzer
 
-
+    # print(f"le coût d'opportunité est {total_H2_min_cost}")
     total_H2_min_cost = total_H2_min_cost + total_opportunity_cost + capital_cost
 
 
@@ -309,10 +309,10 @@ def run_system_simulation(year, alpha, time_period):
 if __name__ == "__main__":
 
     start_time = time.time()
-    year = 2019
-    delivery_period = "week"
+    year = 2021
+    delivery_period = "year"
     # alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
-    alphas = [0.5]
+    alphas = [0.999]
 
     for alpha in alphas:
         run_system_simulation(year, alpha, delivery_period)
