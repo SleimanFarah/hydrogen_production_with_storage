@@ -11,76 +11,76 @@ import time
 
 def run_system_simulation(year, alpha, time_period):
 
-    with open('solar_capacity_factor 2017.csv', 'r') as PF_solar_data:
+    with open('solar_capacity_factor_2017.csv', 'r') as PF_solar_data:
         PF_solar_2017 = csv_reader_function(PF_solar_data)
 
-    with open('wind_capacity_factor 2017.csv', 'r') as PF_wind_data:
+    with open('wind_capacity_factor_2017.csv', 'r') as PF_wind_data:
         PF_wind_2017 = csv_reader_function(PF_wind_data)
 
-    with open('electricity_price 2017.csv', 'r') as price_data:
+    with open('electricity_price_2017.csv', 'r') as price_data:
         price_2017 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-    with open('co2_intensity 2017.csv', 'r') as CO2int_data:
+    with open('co2_intensity_2017.csv', 'r') as CO2int_data:
         CO2int_2017 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
-    with open('solar_capacity_factor 2018.csv', 'r') as PF_solar_data:
+    with open('solar_capacity_factor_2018.csv', 'r') as PF_solar_data:
         PF_solar_2018 = csv_reader_function(PF_solar_data)
 
-    with open('wind_capacity_factor 2018.csv', 'r') as PF_wind_data:
+    with open('wind_capacity_factor_2018.csv', 'r') as PF_wind_data:
         PF_wind_2018 = csv_reader_function(PF_wind_data)
 
-    with open('electricity_price 2018.csv', 'r') as price_data:
+    with open('electricity_price_2018.csv', 'r') as price_data:
         price_2018 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-    with open('co2_intensity 2018.csv', 'r') as CO2int_data:
+    with open('co2_intensity_2018.csv', 'r') as CO2int_data:
         CO2int_2018 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
-    with open('solar_capacity_factor 2019.csv', 'r') as PF_solar_data:
+    with open('solar_capacity_factor_2019.csv', 'r') as PF_solar_data:
         PF_solar_2019 = csv_reader_function(PF_solar_data)
 
-    with open('wind_capacity_factor 2019.csv', 'r') as PF_wind_data:
+    with open('wind_capacity_factor_2019.csv', 'r') as PF_wind_data:
         PF_wind_2019 = csv_reader_function(PF_wind_data)
 
-    with open('electricity_price 2019.csv', 'r') as price_data:
+    with open('electricity_price_2019.csv', 'r') as price_data:
         price_2019 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-    with open('co2_intensity 2019.csv', 'r') as CO2int_data:
+    with open('co2_intensity_2019.csv', 'r') as CO2int_data:
         CO2int_2019 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
-    with open('solar_capacity_factor 2020.csv', 'r') as PF_solar_data:
+    with open('solar_capacity_factor_2020.csv', 'r') as PF_solar_data:
         PF_solar_2020 = csv_reader_function(PF_solar_data)
 
-    with open('wind_capacity_factor 2020.csv', 'r') as PF_wind_data:
+    with open('wind_capacity_factor_2020.csv', 'r') as PF_wind_data:
         PF_wind_2020 = csv_reader_function(PF_wind_data)
 
-    with open('electricity_price 2020.csv', 'r') as price_data:
+    with open('electricity_price_2020.csv', 'r') as price_data:
         price_2020 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-    with open('co2_intensity 2020.csv', 'r') as CO2int_data:
+    with open('co2_intensity_2020.csv', 'r') as CO2int_data:
         CO2int_2020 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
-    with open('solar_capacity_factor 2021.csv', 'r') as PF_solar_data:
+    with open('solar_capacity_factor_2021.csv', 'r') as PF_solar_data:
         PF_solar_2021 = csv_reader_function(PF_solar_data)
 
-    with open('wind_capacity_factor 2021.csv', 'r') as PF_wind_data:
+    with open('wind_capacity_factor_2021.csv', 'r') as PF_wind_data:
         PF_wind_2021 = csv_reader_function(PF_wind_data)
 
-    with open('electricity_price 2021.csv', 'r') as price_data:
+    with open('electricity_price_2021.csv', 'r') as price_data:
         price_2021 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-    with open('co2_intensity 2021.csv', 'r') as CO2int_data:
+    with open('co2_intensity_2021.csv', 'r') as CO2int_data:
         CO2int_2021 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
-    with open('solar_capacity_factor 2022.csv', 'r') as PF_solar_data:
+    with open('solar_capacity_factor_2022.csv', 'r') as PF_solar_data:
         PF_solar_2022 = csv_reader_function(PF_solar_data)
 
-    with open('wind_capacity_factor 2022.csv', 'r') as PF_wind_data:
+    with open('wind_capacity_factor_2022.csv', 'r') as PF_wind_data:
         PF_wind_2022 = csv_reader_function(PF_wind_data)
 
-    with open('electricity_price 2022.csv', 'r') as price_data:
+    with open('electricity_price_2022.csv', 'r') as price_data:
         price_2022 = np.multiply(csv_reader_function(price_data), 0.001).tolist()
 
-    with open('co2_intensity 2022.csv', 'r') as CO2int_data:
+    with open('co2_intensity_2022.csv', 'r') as CO2int_data:
         CO2int_2022 = np.multiply(csv_reader_function(CO2int_data), 0.001).tolist()
 
     # Initialization of variables
@@ -161,7 +161,7 @@ def run_system_simulation(year, alpha, time_period):
 
 
     PF_wind = np.array((PF_wind_2017+PF_wind_2018+PF_wind_2019+PF_wind_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017):initial_hour+8760*(year-2016)])
-    PF_solar = np.array((PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_wind_2021+PF_wind_2022)[initial_hour+8760*(year-2017):initial_hour+8760*(year-2016)])
+    PF_solar = np.array((PF_solar_2017+PF_solar_2018+PF_solar_2019+PF_solar_2020+PF_solar_2021+PF_solar_2022)[initial_hour+8760*(year-2017):initial_hour+8760*(year-2016)])
     price = np.array((price_2017+price_2018+price_2019+price_2020+price_2021+price_2022)[initial_hour+8760*(year-2017):initial_hour+8760*(year-2016)])
     CO2int = np.array((CO2int_2017+CO2int_2018+CO2int_2019+CO2int_2020+CO2int_2021+CO2int_2022)[initial_hour+8760*(year-2017):initial_hour+8760*(year-2016)])
 
