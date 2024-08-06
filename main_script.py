@@ -245,7 +245,7 @@ def run_system_simulation(year, alpha, time_period):
     else:
         capital_cost = capital_cost_electrolyzer
 
-
+    # print(f"le coût d'opportunité est {total_H2_min_cost}")
     total_H2_min_cost = total_H2_min_cost + total_opportunity_cost + capital_cost
 
 
@@ -312,7 +312,7 @@ if __name__ == "__main__":
 
     start_time = time.time()
     year = 2019
-    delivery_period = "day"
+    delivery_period = "week"
     # alphas = [0.0001, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.999]
     alphas = [0.5]
 

@@ -35,8 +35,8 @@ class HydrogenProductionSystem:
         self.installed_power = 1000
         n.add("Generator", "Wind", bus="ACBus", p_nom=self.installed_power)
         n.add("Generator", "Solar", bus="DCBus", p_nom=self.installed_power)
-        n.add("Generator", "NetworkImport", bus="ACBus", p_nom_extendable=True, p_nom_max=1000, p_nom_min=0)
-        n.add("Generator", "NetworkExport", bus="ACBus",p_nom_extendable=True, p_nom_max=1000, p_nom_min=0, sign=-1)
+        n.add("Generator", "NetworkImport", bus="ACBus", p_nom = 1000)
+        n.add("Generator", "NetworkExport", bus="ACBus",p_nom_ = 1000, sign=-1)
         # n.add("Store", "Network", bus="ACBus", e_nom_extendable=True, e_nom_max=10000, e_nom_min=-10000, e_initial=5000)
 
         # Hydrolyzer creation
@@ -49,7 +49,7 @@ class HydrogenProductionSystem:
         # Battery creation
         if self.battery_on:
             self.battery_capacity = 1000
-            n.add("Store", "Battery", bus="BatteryBus", e_nom_extendable=True, e_nom_max=self.battery_capacity)
+            n.add("Store", "Battery", bus="BatteryBus", e_nom=self.battery_capacity)
         else:
             self.battery_capacity = 0
         # Link values initialization
@@ -59,14 +59,14 @@ class HydrogenProductionSystem:
         self.eff_converter = 0.9
 
         # Links creation
-        n.add("Link", "H2Link", bus0="ACBus", bus1="H2Bus", efficiency=self.eff_electrolysis, p_nom_extendable=True, p_nom_max=self.hydrolyzer_capacity)
+        n.add("Link", "H2Link", bus0="ACBus", bus1="H2Bus", efficiency=self.eff_electrolysis, p_nom=self.hydrolyzer_capacity)
         if battery_on:
-            n.add("Link", "ChargeLink", bus0="DCBus", bus1="BatteryBus", efficiency=self.eff_charge, p_nom_extendable=True, p_nom_max=1000)
-            n.add("Link", "DischargeLink", bus0="BatteryBus", bus1="DCBus", efficiency=self.eff_discharge, p_nom_extendable=True, p_nom_max=1000)
-        n.add("Link", "ACtoDCLink", bus0="ACBus", bus1="DCBus", efficiency=self.eff_converter, p_nom_extendable=True)
-        n.add("Link", "DCtoACLink", bus0="DCBus", bus1="ACBus", efficiency=self.eff_converter, p_nom_extendable=True)
-        n.add("Link", "BuyLink", bus0="NetworkBus", bus1="ACBus", p_nom_extendable=True, p_nom_max=1000)
-        n.add("Link", "SellLink", bus0="ACBus", bus1="NetworkBus", p_nom_extendable=True, p_nom_max=1000)
+            n.add("Link", "ChargeLink", bus0="DCBus", bus1="BatteryBus", efficiency=self.eff_charge)
+            n.add("Link", "DischargeLink", bus0="BatteryBus", bus1="DCBus", efficiency=self.eff_discharge)
+        n.add("Link", "ACtoDCLink", bus0="ACBus", bus1="DCBus", efficiency=self.eff_converter)
+        n.add("Link", "DCtoACLink", bus0="DCBus", bus1="ACBus", efficiency=self.eff_converter)
+        n.add("Link", "BuyLink", bus0="NetworkBus", bus1="ACBus")
+        n.add("Link", "SellLink", bus0="ACBus", bus1="NetworkBus")
 
         # Optimization parameters initialization
 
@@ -443,7 +443,7 @@ class HydrogenProductionSystem:
         n = self.n
         self.alpha = alpha
         n.set_snapshots(range(total_time))
-        n.stores.e_nom_extendable["H2gen"] = True
+        # n.stores.e_nom_extendable["H2gen"] = True
         n.loads.p_set["H2gen"] = 0
         if self.battery_on:
             n.stores.e_initial["Battery"] = self.battery_left
