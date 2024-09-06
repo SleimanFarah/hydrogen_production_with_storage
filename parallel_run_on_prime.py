@@ -1,6 +1,6 @@
 import argparse
 import multiprocessing as mp
-from main_script import run_system_simulation
+from class_network import run_system_simulation
 
 
 def helper(args):
