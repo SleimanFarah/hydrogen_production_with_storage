@@ -519,6 +519,6 @@ if __name__ == '__main__':
                                    battery_capacity=1.0, battery_initial_soc=0.5)
     hps.create_network()
 
-    hps.simulate_benchmark()
+    # hps.simulate_benchmark()
 
-    # hps.simulate_day_to_day()
+    hps.simulate_day_to_day()
