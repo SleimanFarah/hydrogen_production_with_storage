@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 
 import convert_functions
@@ -7,6 +8,19 @@ from function_positive_only import *
 from function_positive_only_float import *
 import pypsa
 import xarray as xr
+import matplotlib.pyplot as plt
+
+outputs_folder = "outputs"
+
+def create_array_value_every_nth_element(length, n, x):
+    # Initialize the array with zeros
+    array = np.zeros(length)
+
+    # Set every nth element to x
+    for ii in range(n - 1, length, n):
+        array[ii] = (ii+1)/n*x
+
+    return array
 
 
 def annualised_cost(discount_rate, life_expectancy, cost, maintenance):
@@ -17,6 +31,15 @@ def annualised_cost(discount_rate, life_expectancy, cost, maintenance):
 
     annualised_cost = crf * cost + maintenance
     return annualised_cost
+
+# For parallel simulation on PRIME
+def run_system_simulation(year, alpha, time_period):
+    hps = HydrogenProductionSystem(year=year, delivery_period=time_period, h2_kg_annual_target=108000, alpha_co2=alpha,
+                                   wind_capacity=1.0, solar_capacity=1.0, electrolyser_capacity=1.0,
+                                   battery_capacity=1.0, battery_initial_soc=0.5)
+    hps.create_network()
+    hps.simulate_benchmark()
+    # hps.simulate_day_to_day()
 
 
 class HydrogenProductionSystem:
@@ -33,6 +56,10 @@ class HydrogenProductionSystem:
         self.electrolyser_p_nom = electrolyser_capacity
         self.battery_e_nom = battery_capacity
         self.battery_initial_soc = battery_initial_soc
+        self.grid_initial_soc = 0.5
+        self.electrolyser_initial_soc = 0.0
+
+        self.grid_e_nom = 10e6
 
         self.wind_cf_t = self.read_data_from_csv(file_name_pattern="data/wind/wind_capacity_factor", years=_years)
         self.solar_cf_t = self.read_data_from_csv(file_name_pattern="data/solar/solar_capacity_factor", years=_years)
@@ -49,7 +76,6 @@ class HydrogenProductionSystem:
 
         # Optimization parameters initialization
         self.co2_price = 0.075  # price of emitting 1 kg of C02
-
 
         # Solar
         self.solar_p_nom = solar_capacity
@@ -98,6 +124,7 @@ class HydrogenProductionSystem:
         self.remaining_days_in_delivery = self.n_days_per_delivery
         self.remaining_electrolyser_full_load_hours_per_delivery = self.electrolyser_full_load_hours_per_delivery
         self.produced_electrolyser_full_load_hours_per_day = 0.0
+        self.electrolyser_e_nom = self.electrolyser_full_load_hours_per_delivery*self.n_delivery
 
         self.all_snapshots = self.wind_cf_t.index
         self.now = self.wind_cf_t.index[self.all_snapshots.year == self.year][0] - pd.Timedelta(hours=14)
@@ -150,6 +177,7 @@ class HydrogenProductionSystem:
         elif self.delivery_period == "test":
             self.n_days_per_delivery = 1
             self.n_delivery = 1
+        self.n_total_hours = 24*self.n_days_per_delivery*self.n_delivery
 
     def create_network(self):
         # Creation of the network
@@ -203,8 +231,8 @@ class HydrogenProductionSystem:
             carrier="ac",
             bus="grid_bus",
             e_cyclic=False,
-            e_nom=999,
-            e_initial=999,
+            e_nom=self.grid_e_nom,
+            e_initial=self.grid_initial_soc*self.grid_e_nom,
             capital_cost=0.0,
             marginal_cost=0.0
         )
@@ -216,7 +244,8 @@ class HydrogenProductionSystem:
             "electrolyser",
             carrier="ac",
             bus="h2_bus",
-            e_nom=self.electrolyser_full_load_hours_per_delivery,
+            e_nom=self.electrolyser_e_nom,
+            e_initial = self.electrolyser_initial_soc*self.electrolyser_e_nom,
             e_cyclic=False,
             # e_min_pu=np.ones(len(self.all_snapshots))*self.remaining_electrolyser_full_load_hours_per_delivery,
             capital_cost=self.electrolyser_annualised_cost,
@@ -328,7 +357,7 @@ class HydrogenProductionSystem:
             # Constraint for hydrogen production
             # **********************************
             self.network.stores_t["e_min_pu"]["electrolyser"] = np.zeros(len(self.snapshots_ltp))
-            self.network.stores_t["e_min_pu"].loc[self.snapshots_ltp[-1], "electrolyser"] = self.remaining_electrolyser_full_load_hours_per_delivery/self.electrolyser_full_load_hours_per_delivery
+            self.network.stores_t["e_min_pu"].loc[self.snapshots_ltp[-1], "electrolyser"] = self.electrolyser_initial_soc + self.remaining_electrolyser_full_load_hours_per_delivery/self.electrolyser_e_nom
             # **********************************
             # Optimise the network
             self.network.optimize(solver_name="gurobi")
@@ -362,7 +391,7 @@ class HydrogenProductionSystem:
 
         # Hydrogen production constraint
         self.network.stores_t["e_min_pu"]["electrolyser"] = np.zeros(len(self.snapshots_dp))
-        self.network.stores_t["e_min_pu"].loc[self.snapshots_dp[-1], "electrolyser"] = self.electrolyser_full_load_hours_to_dp/self.electrolyser_full_load_hours_per_delivery
+        self.network.stores_t["e_min_pu"].loc[self.snapshots_dp[-1], "electrolyser"] = self.electrolyser_initial_soc + self.electrolyser_full_load_hours_to_dp/self.electrolyser_e_nom
 
         self.network.optimize(solver_name="gurobi")
 
@@ -393,9 +422,9 @@ class HydrogenProductionSystem:
         print("HPP run successfully!")
         return self.produced_electrolyser_full_load_hours_per_day
 
-    def simulate(self):
+    def simulate_day_to_day(self):
 
-        # np_array = np.array([])
+        os.makedirs(f"{outputs_folder}/day_to_day", exist_ok=True)
 
         for delivery in range(self.n_delivery):
             print(f"Delivery {(delivery+1)}/{self.n_delivery}")
@@ -418,8 +447,6 @@ class HydrogenProductionSystem:
 
                 self.network_time_series_history_df = pd.concat([self.network_time_series_history_df, time_series_df])
 
-                # np_array = np.concatenate([np_array, [self.produced_electrolyser_full_load_hours_per_day]])
-
                 self.remaining_days_in_delivery -= 1
                 print(self.remaining_days_in_delivery)
                 self.remaining_electrolyser_full_load_hours_per_delivery -= self.produced_electrolyser_full_load_hours_per_day
@@ -435,30 +462,55 @@ class HydrogenProductionSystem:
                 self.now = self.all_snapshots[self.now_idx]
 
                 # Get battery soc
-                self.battery_initial_soc = self.network.stores_t.e["battery"].iloc[-1]
+                self.battery_initial_soc = self.network.stores_t.e["battery"].iloc[-1]/self.battery_e_nom
+                self.electrolyser_initial_soc = self.network.stores_t.e["electrolyser"].iloc[-1]/self.electrolyser_e_nom
+                self.grid_initial_soc = self.network.stores_t.e["grid"].iloc[-1]/self.grid_e_nom
 
                 # Get original network
                 self.network = self.network_original.copy()
 
                 # Update battery state of charge
-                self.network.stores.loc["battery", "e_initial"] = self.battery_initial_soc
+                self.network.stores.loc["battery", "e_initial"] = self.battery_initial_soc*self.battery_e_nom
+                self.network.stores.loc["electrolyser", "e_initial"] = self.electrolyser_initial_soc*self.electrolyser_e_nom
+                self.network.stores.loc["grid", "e_initial"] = self.grid_initial_soc*self.grid_e_nom
                 # ******************************************************************************************************
                 # ******************************************************************************************************
         # Save time series to csv
         # ***********************
         suffixes = 5 * ["_MW"] + 3 * ["_MWh"] + 5 * ["_p0_MW"] + 5 * ["_p1_MW"]
         self.network_time_series_history_df.columns = [f"{col}{suffix}" for col, suffix in zip(self.network_time_series_history_df.columns, suffixes)]
-        self.network_time_series_history_df.to_csv(f"outputs/{self.network_time_series_output_file_name}.csv")
+        self.network_time_series_history_df.to_csv(f"{outputs_folder}/'day_to_day'/{self.network_time_series_output_file_name}.csv")
         print("Simulation run successfully!")
 
+    def simulate_benchmark(self):
 
-def run_system_simulation(year, alpha, time_period):
-    hps = HydrogenProductionSystem(year=year, delivery_period=time_period, h2_kg_annual_target=108000, alpha_co2=alpha,
-                                   wind_capacity=1.0, solar_capacity=1.0, electrolyser_capacity=1.0,
-                                   battery_capacity=1.0, battery_initial_soc=0.5)
-    hps.create_network()
-    hps.simulate()
-    return hps  # or any relevant result you want to return
+        os.makedirs(f"{outputs_folder}/benchmark", exist_ok=True)
+
+        self.snapshots_benchmark = self.all_snapshots[self.all_snapshots.year == self.year]
+        self.snapshots_benchmark = self.snapshots_benchmark[0:self.n_total_hours]
+
+        # Set the snapshots
+        self.network.set_snapshots(self.snapshots_benchmark)
+
+
+        # Hydrogen production constraint
+        e_min_pu_electrolyser = create_array_value_every_nth_element(length=len(self.snapshots_benchmark), x=self.electrolyser_full_load_hours_per_delivery, n=24*self.n_days_per_delivery)
+        self.network.stores.loc["electrolyser", "e_nom"] = e_min_pu_electrolyser[-1]
+        self.network.stores_t["e_min_pu"]["electrolyser"] = e_min_pu_electrolyser/e_min_pu_electrolyser[-1]
+        self.network.optimize(solver_name="gurobi")
+
+        self.network_time_series_history_df = pd.concat(
+            [self.network.generators_t.p, self.network.stores_t.p, self.network.stores_t.e, self.network.links_t.p0,
+             self.network.links_t.p1], axis=1)
+
+        # Save time series to csv
+        # ***********************
+        suffixes = 5 * ["_MW"] + 3 * ["_MWh"] + 5 * ["_p0_MW"] + 5 * ["_p1_MW"]
+        self.network_time_series_history_df.columns = [f"{col}{suffix}" for col, suffix in
+                                                       zip(self.network_time_series_history_df.columns, suffixes)]
+        self.network_time_series_history_df.to_csv(
+            f"{outputs_folder}/benchmark/{self.network_time_series_output_file_name}.csv")
+        print("Simulation run successfully!")
 
 
 if __name__ == '__main__':
@@ -467,4 +519,6 @@ if __name__ == '__main__':
                                    battery_capacity=1.0, battery_initial_soc=0.5)
     hps.create_network()
 
-    hps.simulate()
+    hps.simulate_benchmark()
+
+    # hps.simulate_day_to_day()
