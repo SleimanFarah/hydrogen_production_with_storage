@@ -32,16 +32,6 @@ def annualised_cost(discount_rate, life_expectancy, cost, maintenance):
     annualised_cost = crf * cost + maintenance
     return annualised_cost
 
-# For parallel simulation on PRIME
-def run_system_simulation(year, alpha, time_period):
-    hps = HydrogenProductionSystem(year=year, delivery_period=time_period, h2_kg_annual_target=108000, alpha_co2=alpha,
-                                   wind_capacity=1.0, solar_capacity=1.0, electrolyser_capacity=1.0,
-                                   battery_capacity=1.0, battery_initial_soc=0.5)
-    hps.create_network()
-    hps.simulate_benchmark()
-    # hps.simulate_day_to_day()
-
-
 class HydrogenProductionSystem:
 
     def __init__(self, year, delivery_period, alpha_co2, h2_kg_annual_target, wind_capacity, solar_capacity, electrolyser_capacity, battery_capacity, battery_initial_soc):
@@ -511,6 +501,16 @@ class HydrogenProductionSystem:
         self.network_time_series_history_df.to_csv(
             f"{outputs_folder}/benchmark/{self.network_time_series_output_file_name}.csv")
         print("Simulation run successfully!")
+
+
+# For parallel simulation on PRIME
+def run_system_simulation(year, alpha, time_period):
+    hps = HydrogenProductionSystem(year=year, delivery_period=time_period, h2_kg_annual_target=108000, alpha_co2=alpha,
+                                   wind_capacity=1.0, solar_capacity=1.0, electrolyser_capacity=1.0,
+                                   battery_capacity=1.0, battery_initial_soc=0.5)
+    hps.create_network()
+    # hps.simulate_benchmark()
+    hps.simulate_day_to_day()
 
 
 if __name__ == '__main__':
