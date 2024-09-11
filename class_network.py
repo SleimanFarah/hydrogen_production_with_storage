@@ -469,7 +469,7 @@ class HydrogenProductionSystem:
         # ***********************
         suffixes = 5 * ["_MW"] + 3 * ["_MWh"] + 5 * ["_p0_MW"] + 5 * ["_p1_MW"]
         self.network_time_series_history_df.columns = [f"{col}{suffix}" for col, suffix in zip(self.network_time_series_history_df.columns, suffixes)]
-        self.network_time_series_history_df.to_csv(f"{outputs_folder}/'day_to_day'/{self.network_time_series_output_file_name}.csv")
+        self.network_time_series_history_df.to_csv(f"{outputs_folder}/day_to_day/{self.network_time_series_output_file_name}.csv")
         print("Simulation run successfully!")
 
     def simulate_benchmark(self):
