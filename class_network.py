@@ -347,7 +347,7 @@ class HydrogenProductionSystem:
             # Constraint for hydrogen production
             # **********************************
             self.network.stores_t["e_min_pu"]["electrolyser"] = np.zeros(len(self.snapshots_ltp))
-            self.network.stores_t["e_min_pu"].loc[self.snapshots_ltp[-1], "electrolyser"] = self.electrolyser_initial_soc + self.remaining_electrolyser_full_load_hours_per_delivery/self.electrolyser_e_nom
+            self.network.stores_t["e_min_pu"].loc[self.snapshots_ltp[-1], "electrolyser"] = round(self.electrolyser_initial_soc + self.remaining_electrolyser_full_load_hours_per_delivery/self.electrolyser_e_nom, 6)  # Rounding is added to avoid "WARNING:pypsa.consistency:The element electrolyser of stores has a smaller maximum than minimum operational limit which can lead to infeasibility for the following snapshots".
             # **********************************
             # Optimise the network
             self.network.optimize(solver_name="gurobi")
@@ -399,7 +399,7 @@ class HydrogenProductionSystem:
         # self.network.stores.loc["battery", "e_cyclic"] = False
 
         # Hydrogen production constraint
-        self.network.links_t.p_min_pu["electrolyser"] = self.network.links_t.p0["electrolyser"]
+        self.network.links_t.p_min_pu["electrolyser"] = self.network.links_t.p0["electrolyser"].round(6)  # Rounding is added to avoid some misleading warnings about pmax being smaller than pmin.
         # Battery power flow constraint
         self.network.stores_t.p_set["battery"] = self.network.stores_t.p["battery"]
 
@@ -423,6 +423,8 @@ class HydrogenProductionSystem:
             for day in range(self.n_days_per_delivery):
                 print(f"Delivery {(delivery + 1)}/{self.n_delivery}")
                 print(f"Day {day+1}/{self.n_days_per_delivery}")
+                if day == 10:
+                    print("Debug")
 
                 self.update_snapshots()
                 self.run_ltp()
@@ -514,7 +516,7 @@ def run_system_simulation(year, alpha, time_period):
 
 
 if __name__ == '__main__':
-    hps = HydrogenProductionSystem(year=2018, delivery_period="week", h2_kg_annual_target=108000, alpha_co2=0.5,
+    hps = HydrogenProductionSystem(year=2021, delivery_period="year", h2_kg_annual_target=108000, alpha_co2=0.5,
                                    wind_capacity=1.0, solar_capacity=1.0, electrolyser_capacity=1.0,
                                    battery_capacity=1.0, battery_initial_soc=0.5)
     hps.create_network()
