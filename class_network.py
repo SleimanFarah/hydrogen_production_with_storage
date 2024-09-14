@@ -114,7 +114,8 @@ class HydrogenProductionSystem:
         self.remaining_days_in_delivery = self.n_days_per_delivery
         self.remaining_electrolyser_full_load_hours_per_delivery = self.electrolyser_full_load_hours_per_delivery
         self.produced_electrolyser_full_load_hours_per_day = 0.0
-        self.electrolyser_e_nom = self.electrolyser_full_load_hours_per_delivery*self.n_delivery
+        self.electrolyser_e_nom = 8760.0  # electrolyser cannot run more than 8760 hours per year
+        self.electrolyser_e_min_annual = self.electrolyser_full_load_hours_per_delivery*self.n_delivery/self.electrolyser_e_nom
 
         self.all_snapshots = self.wind_cf_t.index
         self.now = self.wind_cf_t.index[self.all_snapshots.year == self.year][0] - pd.Timedelta(hours=14)
@@ -354,6 +355,7 @@ class HydrogenProductionSystem:
 
             # Get the total hydrogen for daily planner
             self.electrolyser_full_load_hours_to_dp = self.network.links_t["p0"].loc[self.snapshots_dp, "electrolyser"].sum()
+            self.electrolyser_full_load_hours_to_dp_24 = self.network.links_t["p0"].loc[self.snapshots_dp[0:24], "electrolyser"].sum()
         else:  # This is the last day
             self.electrolyser_full_load_hours_to_dp = self.remaining_electrolyser_full_load_hours_per_delivery
             # Set the snapshots
@@ -382,6 +384,7 @@ class HydrogenProductionSystem:
         # Hydrogen production constraint
         self.network.stores_t["e_min_pu"]["electrolyser"] = np.zeros(len(self.snapshots_dp))
         self.network.stores_t["e_min_pu"].loc[self.snapshots_dp[-1], "electrolyser"] = self.electrolyser_initial_soc + self.electrolyser_full_load_hours_to_dp/self.electrolyser_e_nom
+        self.network.stores_t["e_min_pu"].loc[self.snapshots_dp[23], "electrolyser"] = self.electrolyser_initial_soc + self.electrolyser_full_load_hours_to_dp_24 / self.electrolyser_e_nom
 
         self.network.optimize(solver_name="gurobi")
 
@@ -423,8 +426,10 @@ class HydrogenProductionSystem:
             for day in range(self.n_days_per_delivery):
                 print(f"Delivery {(delivery + 1)}/{self.n_delivery}")
                 print(f"Day {day+1}/{self.n_days_per_delivery}")
-                if day == 10:
-                    print("Debug")
+
+                # if delivery == 11:
+                #     if day == 0:
+                #         print("Debug")
 
                 self.update_snapshots()
                 self.run_ltp()
@@ -506,8 +511,8 @@ class HydrogenProductionSystem:
 
 
 # For parallel simulation on PRIME
-def run_system_simulation(year, alpha, time_period):
-    hps = HydrogenProductionSystem(year=year, delivery_period=time_period, h2_kg_annual_target=108000, alpha_co2=alpha,
+def run_system_simulation(year, alpha, delivery_period):
+    hps = HydrogenProductionSystem(year=year, delivery_period=delivery_period, h2_kg_annual_target=108000, alpha_co2=alpha,
                                    wind_capacity=1.0, solar_capacity=1.0, electrolyser_capacity=1.0,
                                    battery_capacity=1.0, battery_initial_soc=0.5)
     hps.create_network()
@@ -516,11 +521,13 @@ def run_system_simulation(year, alpha, time_period):
 
 
 if __name__ == '__main__':
-    hps = HydrogenProductionSystem(year=2021, delivery_period="year", h2_kg_annual_target=108000, alpha_co2=0.5,
-                                   wind_capacity=1.0, solar_capacity=1.0, electrolyser_capacity=1.0,
-                                   battery_capacity=1.0, battery_initial_soc=0.5)
-    hps.create_network()
 
-    # hps.simulate_benchmark()
+    year=[2018, 2019]
+    alpha=[0.0001, 0.1, 0.2, 0.3]
+    delivery_period = ["month"]
 
-    hps.simulate_day_to_day()
+    for yy in year:
+        for aa in alpha:
+            for dd in delivery_period:
+                run_system_simulation(year=yy, alpha=aa, delivery_period=dd)
+

@@ -15,7 +15,7 @@ def parallel_run(years, alphas, time_periods):
 
 if __name__ == "__main__":
 
-    years = [2018, 2019, 2020, 2021]
+    years = [2018, 2019]
     time_periods = ["month"]
 
     parser = argparse.ArgumentParser(description="parallel_processing_input")
