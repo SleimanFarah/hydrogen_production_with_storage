@@ -15,8 +15,8 @@ def parallel_run(years, alphas, time_periods):
 
 if __name__ == "__main__":
 
-    years = [2018, 2019]
-    time_periods = ["month"]
+    years = [2018, 2019, 2020, 2021]
+    time_periods = ["year", "month", "day"]
 
     parser = argparse.ArgumentParser(description="parallel_processing_input")
     parser.add_argument('--alphas', type=float, nargs="+", help="alpha values")
