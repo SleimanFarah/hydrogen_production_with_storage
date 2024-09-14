@@ -514,7 +514,7 @@ class HydrogenProductionSystem:
 def run_system_simulation(year, alpha, delivery_period):
     hps = HydrogenProductionSystem(year=year, delivery_period=delivery_period, h2_kg_annual_target=108000, alpha_co2=alpha,
                                    wind_capacity=1.0, solar_capacity=1.0, electrolyser_capacity=1.0,
-                                   battery_capacity=1.0, battery_initial_soc=0.0)
+                                   battery_capacity=5.0, battery_initial_soc=0.0)
     hps.create_network()
     # hps.simulate_benchmark()
     hps.simulate_day_to_day()
