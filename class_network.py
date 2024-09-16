@@ -358,6 +358,7 @@ class HydrogenProductionSystem:
             self.electrolyser_full_load_hours_to_dp_24 = self.network.links_t["p0"].loc[self.snapshots_dp[0:24], "electrolyser"].sum()
         else:  # This is the last day
             self.electrolyser_full_load_hours_to_dp = self.remaining_electrolyser_full_load_hours_per_delivery
+            self.electrolyser_full_load_hours_to_dp_24 = self.remaining_electrolyser_full_load_hours_per_delivery
             # Set the snapshots
             self.snapshots_dp = self.snapshots_dp[0:24]
 
@@ -522,9 +523,9 @@ def run_system_simulation(year, alpha, delivery_period):
 
 if __name__ == '__main__':
 
-    year=[2018, 2019]
-    alpha=[0.0001, 0.1, 0.2, 0.3]
-    delivery_period = ["month"]
+    year=[2018, 2019, 2020, 2021]
+    alpha=[0.0001]
+    delivery_period = ["day"]
 
     for yy in year:
         for aa in alpha:
